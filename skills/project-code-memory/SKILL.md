@@ -7,8 +7,8 @@ description: "Maintain project ForAI Markdown memory, retrieve code and design r
 
 Each adopting project owns its runtime, dependencies, Markdown and database under
 `ForAI/`. This skill distributes a runtime snapshot; there is no central project
-service or shared memory database. The CLI is an offline relation retriever and
-deterministic checker; you provide code reading and semantic judgment.
+service or shared memory database. The CLI combines project-owned graph retrieval
+with a user-configured embedding provider; you provide code reading and semantic judgment.
 
 ## Authority and evidence
 
@@ -33,8 +33,15 @@ Python 3.12 (or `uv run --python 3.12 --no-project <script> <project>`). It copi
 uv run --directory ForAI/rag python manage.py init
 ```
 
+**Prompt for embedding setup at installation.** Follow [embedding setup](references/embeddings.md):
+ask the user to select an API or local Ollama model, then configure the project and run
+`embedding doctor`. Do not choose a provider or download weights without that selection.
+If postponed, report that only keyword/graph retrieval is available. Installer JSON
+and init output include the setup prompt; present it instead of silently ignoring it.
+
 The copied source, pyproject.toml and uv.lock belong to the project and enter its Git
-history. Its `.venv/` and `.cache/` remain local. All later commands use this project's
+history. Its `.venv/`, `.cache/`, `.models/`, `.env` and actual `embedding.toml` remain local;
+commit only the embedding config example with safe defaults. All later commands use this project's
 `manage.py`, which binds the project root from its own location. Do not invoke a
 central checkout, globally shared database, or another project's runtime.
 The bootstrap refuses to overwrite differing files. For upgrades, compare the bundled
@@ -55,7 +62,7 @@ YAML block in the body. Use separate functional and design documents.
 
 1. Read `ForAI/index.md`, then query using feature names, bilingual keywords or symbols.
 2. Inspect returned document paths and code sources, including configurations and
-   relevant tests. Query currently refreshes the entire index for version correctness.
+   relevant tests. Query refreshes the graph and reuses unchanged document vectors.
 3. Bring unresolved issues into the task context. A probe observes a static Python
    literal, not production runtime behavior. Avoid treating a missing result as absence
    of functionality or a clean scan as proof of semantic consistency.
@@ -78,7 +85,7 @@ YAML block in the body. Use separate functional and design documents.
 ## Limits and scheduling
 
 See [commands and supported checks](references/commands.md) when invoking the CLI.
-This version does not infer arbitrary code semantics, run embeddings, track resolved
+This version does not infer arbitrary code semantics, track resolved
 conflict history automatically, or enforce all commits without external integration.
 Run scans at task completion and after merges. Scheduled checks require a configured
 CI or scheduler; writing a skill does not activate a timer. Preserve findings and

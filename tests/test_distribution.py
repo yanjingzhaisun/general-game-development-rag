@@ -70,6 +70,48 @@ def test_install_conflicts_are_checked_before_writing(tmp_path):
     assert not (tmp_path / "AGENTS.md").exists()
 
 
+def test_install_prompts_for_embeddings_and_preserves_local_config(tmp_path):
+    module = installer()
+    result = module.install(tmp_path)
+    assert result["embedding"]["setup_required"]
+    assert set(result["embedding"]["options"]) == {"api", "local", "later"}
+    config = tmp_path / "ForAI/rag/embedding.toml"
+    config.write_text('provider = "disabled"\n', encoding="utf-8")
+    assert module.install(tmp_path)["embedding"]["provider"] == "disabled"
+    assert config.read_text(encoding="utf-8") == 'provider = "disabled"\n'
+
+
+def test_installed_gitignore_keeps_secrets_and_vectors_local(tmp_path):
+    installer().install(tmp_path)
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    for path in [
+        "ForAI/rag/embedding.toml",
+        "ForAI/rag/.cache/embeddings.sqlite3",
+        "ForAI/rag/.venv/lib/x.py",
+        "ForAI/rag/.models/model.bin",
+        "ForAI/rag/.env",
+    ]:
+        assert (
+            subprocess.run(
+                ["git", "-C", str(tmp_path), "check-ignore", "--no-index", "-q", path], check=False
+            ).returncode
+            == 0
+        )
+    for path in [
+        "ForAI/rag/embedding.example.toml",
+        "ForAI/rag/uv.lock",
+        "ForAI/rag/src/x.py",
+        "ForAI/rag/.env.example",
+        ".agents/skills/project-code-memory/SKILL.md",
+    ]:
+        assert (
+            subprocess.run(
+                ["git", "-C", str(tmp_path), "check-ignore", "--no-index", "-q", path], check=False
+            ).returncode
+            == 1
+        )
+
+
 @pytest.mark.skipif(shutil.which("uv") is None, reason="uv required for local-runtime integration")
 def test_two_projects_use_separate_runtime_and_database(tmp_path):
     for name in ("game-a", "game-b"):

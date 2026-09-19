@@ -11,3 +11,22 @@ wheels/
 ForAI/rag/.cache/
 .pytest_cache/
 .ruff_cache/
+
+# Test/type-check output
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+*.log
+
+# Secrets and machine-local embedding settings (examples stay versioned)
+.env
+.env.*
+!.env.example
+!.env.template
+ForAI/rag/embedding.toml
+ForAI/rag/.models/
+
+# OS metadata
+.DS_Store
+Thumbs.db

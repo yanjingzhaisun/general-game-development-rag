@@ -3,6 +3,8 @@
 import shutil
 from pathlib import Path
 
+from general_game_development_rag.embeddings import DEFAULT_CONFIG, RUNTIME_GITIGNORE
+
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "skills/project-code-memory/assets/runtime"
 
@@ -21,7 +23,7 @@ def main():
     (TARGET / "pyproject.toml").write_text(
         """[project]
 name = "general-game-development-rag"
-version = "0.1.0"
+version = "0.2.0"
 description = "Project-owned ForAI memory runtime"
 requires-python = ">=3.12"
 dependencies = ["pyyaml>=6.0.2,<7"]
@@ -37,9 +39,8 @@ build-backend = "hatchling.build"
         newline="\n",
     )
     (TARGET / ".python-version").write_text("3.12\n", encoding="utf-8", newline="\n")
-    (TARGET / ".gitignore").write_text(
-        ".venv/\n.cache/\n__pycache__/\n", encoding="utf-8", newline="\n"
-    )
+    (TARGET / ".gitignore").write_text(RUNTIME_GITIGNORE, encoding="utf-8", newline="\n")
+    (TARGET / "embedding.example.toml").write_text(DEFAULT_CONFIG, encoding="utf-8", newline="\n")
     (TARGET / "manage.py").write_text(
         '''"""Run memory maintenance bound to this project, regardless of shell cwd."""
 

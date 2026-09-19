@@ -16,7 +16,10 @@ def bootstrap(root: Path) -> list[str]:
     plans = []
     for path in sorted(source.rglob("*")):
         relative = path.relative_to(source)
-        if any(part in {".venv", ".cache", "__pycache__"} for part in relative.parts):
+        if (
+            any(part in {".venv", ".cache", ".models", "__pycache__"} for part in relative.parts)
+            or path.name == "embedding.toml"
+        ):
             continue
         if not path.is_file():
             continue
@@ -39,7 +42,16 @@ def main():
     parser.add_argument("project", type=Path)
     args = parser.parse_args()
     try:
-        print(json.dumps({"created": bootstrap(args.project)}, ensure_ascii=True, indent=2))
+        print(
+            json.dumps(
+                {
+                    "created": bootstrap(args.project),
+                    "embedding_setup": "Run local manage.py init, then ask the user to select API or local Ollama embeddings; see references/embeddings.md.",
+                },
+                ensure_ascii=True,
+                indent=2,
+            )
+        )
     except (ValueError, OSError) as exc:
         parser.exit(2, str(exc) + "\n")
 

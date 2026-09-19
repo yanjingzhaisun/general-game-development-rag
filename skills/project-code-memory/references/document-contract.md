@@ -40,7 +40,7 @@ document uses the same claim shape but `kind: design`. Functional sources withou
 reviewed SHA-256 hashes produce `needs_review`. Design sources do not require hashes.
 
 Paths are project-relative with `/`; absolute paths, parent traversal and escaping
-symlinks are rejected. `sources` binds whole files in v0.1 (symbols are not resolved).
+symlinks are rejected. `sources` binds whole files in v0.2 (symbols are not resolved).
 Probe paths also create code relationships. Code text is read from disk, not stored
 in the graph. `python_literal` reads exactly one top-level assignment using AST and
 literal evaluation, never imports or executes the file. It is a syntactic observation,
@@ -50,7 +50,7 @@ Each claim requires stable local `id`, `subject`, `predicate`, `scope`, and `val
 Use exact normalized units in the predicate, such as `ttl_minutes`; automatic unit
 conversion is not implemented. Status is `active`, `proposed`, or `superseded`.
 Only active claims participate in conflict checks. Scope must include relevant
-environment/version conditions; v0.1 compares scope strings exactly.
+environment/version conditions; v0.2 compares scope strings exactly.
 
 Change record body:
 

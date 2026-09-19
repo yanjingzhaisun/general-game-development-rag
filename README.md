@@ -40,19 +40,26 @@ uv run --directory ForAI/rag python manage.py scan --write-report
 `.venv/` 和 `.cache/` 忽略。代码可以随项目独立演进；重新执行 bootstrap 遇到不同
 内容会停止，升级需要显式比较和合并。此仓库初始化没有安装全局工具或个人 skill。
 
-## 已实现的 v0.1
+## 已实现的 v0.2
 
 - ForAI Markdown frontmatter 校验，正文结构化关系与断言。
 - SQLite 图投影；代码仅保存路径和 SHA-256；缓存可删除重建。
 - 关键词召回与有界图扩展，返回来源、关系与相关问题。
+- API / 本地 Ollama embedding、文档分块、内容缓存和模型版本隔离。
+- 余弦语义召回与关键词排名融合；安装时提示用户选择模型和填写本地配置。
 - 源文件消失、指纹变化、同范围断言分歧检查。
 - Python 静态字面值探针：区分功能描述过期与设计偏差，不执行目标代码。
 - 暂存区或提交范围的代码变更覆盖检查，匹配精确代码哈希。
 - 可复用的 [project-code-memory skill](skills/project-code-memory/SKILL.md)。
 
-第一版每次完整重建索引。尚未实现向量检索、增量索引、任意自然语言语义判断、
+图索引每次完整重建，向量按内容与模型配置增量计算。尚未实现增量图索引、任意自然语言语义判断、
 跨语言符号解析、自动冲突历史管理或目标项目后台定时扫描。检索由调用方 AI 用来阅读原文
-并生成回答；CLI 自身不调用模型。扫描通过不等于证明设计与实现完全一致。
+并生成回答；CLI 只调用用户配置的 embedding 模型。扫描通过不等于证明设计与实现完全一致。
+
+安装器和 init 会提示 embedding 配置。选择 API 或本地 Ollama 后运行
+`uv run --directory ForAI/rag python manage.py embedding doctor` 检查连接。
+配置说明见 [embedding 指南](skills/project-code-memory/references/embeddings.md)。
+实际配置、数据库、环境和密钥文件被忽略，示例配置与 uv.lock 正常提交。
 
 ## 命令
 
@@ -60,7 +67,8 @@ uv run --directory ForAI/rag python manage.py scan --write-report
 ggrag [--root PROJECT] init
 ggrag [--root PROJECT] hash FILE...
 ggrag [--root PROJECT] sync
-ggrag [--root PROJECT] query TEXT [--limit 5] [--hops 2] [--max-nodes 40]
+ggrag [--root PROJECT] embedding status|configure|doctor
+ggrag [--root PROJECT] query TEXT [--limit 5] [--hops 2] [--max-nodes 40] [--keyword-only]
 ggrag [--root PROJECT] scan [--write-report] [--fail-on-issues]
 ggrag [--root PROJECT] coverage [--staged | --base REF]
 ```

@@ -1,0 +1,15 @@
+# Choose api, ollama, or explicitly disabled. No network calls until configured.
+provider = "unconfigured"
+model = ""
+endpoint = ""
+# Store the environment-variable NAME, never an API key.
+api_key_env = "GGRAG_EMBEDDING_API_KEY"
+# Bump when model weights behind the same name change.
+revision = "1"
+timeout_seconds = 30
+batch_size = 16
+chunk_chars = 1200
+chunk_overlap = 150
+document_prefix = ""
+query_prefix = ""
+# Optional: dimensions = 768 (only if the provider supports it)

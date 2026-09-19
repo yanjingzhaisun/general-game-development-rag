@@ -121,7 +121,7 @@ def load_documents(root: Path) -> list[Document]:
     ids = set()
     for path in sorted((root / "ForAI").rglob("*.md")):
         relative = path.relative_to(root).as_posix()
-        if any(part in {".cache", ".venv", "__pycache__"} for part in path.parts):
+        if any(part in {".cache", ".venv", ".models", "__pycache__"} for part in path.parts):
             continue
         project_path(root, relative)
         doc = parse_document(relative, path.read_text(encoding="utf-8-sig"))

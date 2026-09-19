@@ -10,6 +10,7 @@ from contextlib import closing
 from pathlib import Path
 
 from .documents import MemoryError, digest, load_documents, project_path
+from .embeddings import load_config, semantic_search, status
 
 
 def canonical(value) -> str:
@@ -90,6 +91,7 @@ def build(root: Path) -> dict:
             "kind": kind,
             "path": doc.path,
             "summary": doc.meta["summary"],
+            "keywords": doc.meta["keywords_en"] + doc.meta["keywords_zh"],
             "text": doc.text,
         }
         if kind == "functional" and not doc.memory.get("sources"):
@@ -211,7 +213,14 @@ def build(root: Path) -> dict:
     }
 
 
-def query(root: Path, text: str, limit: int = 5, hops: int = 2, max_nodes: int = 40) -> dict:
+def query(
+    root: Path,
+    text: str,
+    limit: int = 5,
+    hops: int = 2,
+    max_nodes: int = 40,
+    keyword_only: bool = False,
+) -> dict:
     if not text.strip() or not 1 <= limit <= 50 or not 0 <= hops <= 3 or not 1 <= max_nodes <= 200:
         raise MemoryError("Query required; limit 1..50, hops 0..3, max-nodes 1..200")
     state = build(root)  # Correctness first: no stale answers after branch/worktree changes.
@@ -234,7 +243,25 @@ def query(root: Path, text: str, limit: int = 5, hops: int = 2, max_nodes: int =
         score = sum(haystack.count(term) for term in terms)
         if score:
             scored.append((-score, node_id))
-    seeds = [node_id for _, node_id in sorted(scored)[: min(limit, max_nodes)]]
+    candidates = max(10, limit * 3)
+    keyword_ids = [node_id for _, node_id in sorted(scored)[:candidates]]
+    config = load_config(root)
+    retrieval = {"mode": "keyword_graph", "embedding": status(config)}
+    ranking = keyword_ids
+    if config.enabled and not keyword_only:
+        hits, stats = semantic_search(root, nodes, text, config, candidates)
+        scores = {}
+        for channel in (keyword_ids, [hit["node_id"] for hit in hits]):
+            for rank, node_id in enumerate(channel, 1):
+                scores[node_id] = scores.get(node_id, 0) + 1 / (60 + rank)
+        ranking = sorted(scores, key=lambda key: (-scores[key], key))
+        retrieval = {"mode": "hybrid_graph", "embedding": stats, "semantic_hits": hits[:limit]}
+    elif keyword_only:
+        retrieval["embedding"] = {
+            "status": "skipped_explicitly",
+            "message": "仅执行关键词与图关系检索。",
+        }
+    seeds = ranking[: min(limit, max_nodes)]
     selected = set(seeds)
     frontier = set(seeds)
     for _ in range(hops):
@@ -250,6 +277,7 @@ def query(root: Path, text: str, limit: int = 5, hops: int = 2, max_nodes: int =
     relevant_issues = [item for item in state["issues"] if selected.intersection(item["objects"])]
     return {
         "snapshot": state["snapshot"],
+        "retrieval": retrieval,
         "seeds": seeds,
         "nodes": [{k: v for k, v in nodes[key].items() if k != "text"} for key in sorted(selected)],
         "edges": [list(edge) for edge in edges if edge[0] in selected and edge[2] in selected],
