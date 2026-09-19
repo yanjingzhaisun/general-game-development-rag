@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目代码与设计记忆"
+  short_description: "维护项目 ForAI 文档、代码权威索引和设计偏差，支持检索与变更核验"
+  default_prompt: "Use $project-code-memory to read and maintain this project's code and design memory."

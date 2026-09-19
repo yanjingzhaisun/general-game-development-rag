@@ -1,0 +1,13 @@
+[project]
+name = "general-game-development-rag"
+version = "0.1.0"
+description = "Project-owned ForAI memory runtime"
+requires-python = ">=3.12"
+dependencies = ["pyyaml>=6.0.2,<7"]
+
+[project.scripts]
+ggrag = "general_game_development_rag.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
