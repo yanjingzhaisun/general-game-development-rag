@@ -65,6 +65,8 @@ name)` and return a JSON-compatible value. A command receives one JSON object on
 with `source` and `name`, then returns `{"value": ...}` on stdout. Command readers have a
 10-second timeout; missing commands, timeouts, nonzero exits, or malformed output require
 `inspect_reader`. The reader process receives source text, never an instruction to execute it.
+Python readers can opt into `reports_evidence` to accept an optional keyword `evidence`
+mapping and populate additional observations; the returned literal value is unchanged.
 
 The `type` field is deprecated; including it raises an error.
 `builtin-python` supports `capability: literal` with `language: python` and uses AST
@@ -73,6 +75,39 @@ literal evaluation. Optional
 declarations, including exports, type annotations, `as const`, and `satisfies`. Readers
 must inspect source text only; they never import or execute target-project code. These
 are syntactic observations, not evidence that a value wins at runtime.
+
+Optional `ts-kotlin` uses the same tree-sitter traversal with a Kotlin grammar for `.kt`
+and `.kts`. It reads `val`/`var` initializers (including `const val` and type annotations)
+and simple identifier assignments in Gradle Kotlin DSL blocks. It skips function/class
+bodies, rejects multiple matching writes and unsupported dynamic expressions, and does
+not evaluate Gradle, resolve references or choose between build variants. Install the
+optional readers with `uv sync --extra readers`; missing grammar dependencies require
+`install_reader`. For example, `versionCode = 36` inside `defaultConfig`:
+
+```yaml
+probe:
+  capability: literal
+  language: kotlin       # inferred from .kt or .kts if omitted
+  reader: ts-kotlin      # optional when it is the only enabled Kotlin reader
+  path: app/build.gradle.kts
+  name: versionCode
+```
+
+`builtin-xml` uses Python's standard-library ElementTree with no extra dependencies.
+For `.xml`, `name` is an attribute name: `versionName` matches a local attribute name,
+and `android:versionName` matches the namespace prefix declared in the XML. Values are
+strings, without resource substitution. The first matching attribute in document order
+wins; evidence always includes `matches: N`. If multiple matches have different values,
+it also includes `ambiguous: true`; duplicate identical values do not set that flag.
+An absent attribute requires `inspect_code`; malformed XML requires `inspect_reader`.
+
+```yaml
+probe:
+  capability: literal
+  language: xml          # inferred from .xml if omitted
+  path: app/src/main/AndroidManifest.xml
+  name: android:versionName  # versionName also matches
+```
 
 Each claim requires stable local `id`, `subject`, `predicate`, `scope`, and `value`.
 Use exact normalized units in the predicate, such as `ttl_minutes`; automatic unit

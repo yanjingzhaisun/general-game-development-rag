@@ -1,8 +1,8 @@
 ---
 id: probe-plugin-implementation
-keywords_en: [probe, reader, plugin, typescript, javascript]
-keywords_zh: [探针, reader, 插件, 类型脚本, JavaScript]
-summary: 记录可扩展 probe reader 路由和 TS/JS 静态字面量读取实现。
+keywords_en: [probe, reader, plugin, typescript, javascript, kotlin, xml, android]
+keywords_zh: [探针, reader, 插件, 类型脚本, JavaScript, 安卓]
+summary: 记录可扩展 probe reader 路由与 Python、TS/JS、Kotlin 和 XML 的静态读取实现。
 ---
 
 # Probe 插件化
@@ -40,7 +40,7 @@ graph.py 删除所有按 type 条件分流的 evidence 和漂移元数据写入�
 改为 Python 三种路由的完整 evidence 字节校验；新增废弃 type 的拒绝/改写提示测试、
 所有 Python/TS/JS 成功 claim 的 provenance 测试和未知异常 action 回归测试。
 
-本轮全量验证（Linux、Python 3.12.13、uv 0.12.23）：
+第四轮全量验证（Linux、Python 3.12.13、uv 0.12.23）：
 `uv run --locked --extra readers pytest -q` 实际输出为 `83 passed in 8.33s`；
 uv 在 PATH 中，双项目 runtime 集成测试也执行通过。CI 的项目 runtime 命令使用
 --locked --extra readers 执行严格 scan，输出 issues: []。Windows 矩阵保留，
@@ -50,9 +50,38 @@ Ruff check 输出 `All checks passed!`，format check 为 `47 files already form
 三份源码逐字节一致。使用 ggrag hash 取得源码和测试的新指纹，更新相关 functional
 sources 与以下 covers。精确指纹与影响理由如下。
 
+第五轮扩展 Android APK 项目静态探针，范围按用户决策限定为 Kotlin 和 XML。
+新增 ts-kotlin，`.kt`/`.kts` 按 Kotlin 路由；tree-sitter grammar 按语言选择，
+与 TS/JS 共用遍历和字面值读取，没有复制另一套解析器。支持 const val 与类型注解，
+Gradle KTS DSL 中 compileSdk/versionCode 的简单赋值；多重写入、动态表达式和缺失
+名称均显式 unresolved。不导入或执行目标项目，也不运行 Gradle。
+新增 builtin-xml，仅使用标准库 ElementTree，无 XML 新依赖；局部名及文档命名空间
+前缀匹配属性。返回文档序第一个字符串值，证据带 matches；不同值的重复属性增加
+ambiguous: true，不把歧义隐藏成唯一值。缺失属性 inspect_code，畸形 XML 显式
+inspect_reader。reports_evidence 是 reader 注册的可选扩展，现有 `(path, name)`
+入口与 JSON 值返回契约不变，只有选择该扩展的 reader 接收额外 evidence 字典。
+唯一新增依赖 tree-sitter-kotlin 放在 readers extra；同步根配置、生成器内嵌配置与
+项目 runtime 配置，两份 lock 使用官方 PyPI、未使用 --upgrade，不包含国内镜像。
+新增测试覆盖 Kotlin 三种路由、顶层常量的完整版本证据、两个 Gradle KTS 属性、
+动态/缺失/多重写入拒绝、grammar 缺失的 install_reader（显式及后缀路由），以及
+XML 单匹配、前缀匹配、重复同值与不同值证据、找不到与畸形 XML。
+Kotlin 解码单独保留原始字符串反斜杠，区分关键字与同名引用，字符串内容不套用
+TS 断言剥除/布尔替换；原始字符串拼接仍属于动态表达式，必须 unresolved。
+
+第五轮验证（Linux、Python 3.12.13、uv 0.12.23）：新增 26 个参数化测试用例，
+既有用例全部保留；`uv run --locked --extra readers pytest -q` 实际输出
+`109 passed in 8.94s`。Ruff check 为 `All checks passed!`，format check 为
+`47 files already formatted`。项目 runtime 严格 scan 返回 `issues: []`；两份 lock
+的 `grep -c tuna` 均为 0。已运行构建脚本并逐文件比较三份源码，全部一致；
+生成 bundle 与 ForAI/rag 的 pyproject 也一致。相关 functional sources 与 covers
+均使用阅读后的 ggrag hash 结果更新；未 commit、未 push。Windows 尚需 CI 实跑。
+
 ```rag
 kind: change
 covers:
+- path: skills/project-code-memory/references/document-contract.md
+  sha256: 43a7864b7f820ac24da83f78d9fdb3f0a54f1abdd77e82824f4de66b113a0608
+  reason: 补充 Kotlin/Gradle KTS 和 XML 属性示例，明确匹配数、歧义证据、可选依赖与失败动作。
 - path: .github/workflows/ci.yml
   sha256: 2aaa56e829fe73faf0b96285a8070dc4693d96224ead6079ee5a6b2fd42413c9
   reason: CI uv 固定 0.12.23，sync/run 显式启用 readers 并校验锁文件，覆盖双系统矩阵；记录工作树中已有的全分支 push 触发范围，本轮未改 CI 行为。
@@ -60,48 +89,48 @@ covers:
   sha256: 082c05a9866284b07a1ce0de0a884b2a4663d9b3fcfcb4fd0b73789ad2f938c2
   reason: 只接受统一能力型 probe，拒绝任何 type 字段并提供改写指引；必要路径/符号校验不变。
 - path: ForAI/rag/src/general_game_development_rag/graph.py
-  sha256: a48dc01dc4b850797aeb828f2b8952626ed39012421cd00437dc36abd069f13e
-  reason: 删除 legacy 条件，统一记录所有成功探针的 provenance 和漂移元数据；未知异常统一 inspect_reader。
+  sha256: 482b45b6696bc72ad08c8008b9eabba9556ca9ab0eaa673bdd7dc15eb5c16b41
+  reason: 合并 reader 自报的额外证据，XML matches/ambiguous 随 claim 保存；既有 provenance 和失败分类不变。
 - path: ForAI/rag/src/general_game_development_rag/readers.py
-  sha256: 09e8674657b4c030450204d0b655d5bb8e8b8bfcdc70814285ea9e58cb8cf83e
-  reason: 移除 legacy 直达分支，保留 builtin-python 经统一能力/语言/reader 路由，其余插件逻辑不变。
+  sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
+  reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: ForAI/rag/pyproject.toml
-  sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
-  reason: ForAI/rag runtime 新增可选 readers extra，不把 tree-sitter 加入主依赖。
+  sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
+  reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: ForAI/rag/uv.lock
-  sha256: 4e53dfa5f4f38329c2032ad72707a5d2eadac713588c2e293ae702c5343cd358
-  reason: 锁定 ForAI/rag 可选 tree-sitter reader 依赖及传递依赖。
+  sha256: d5ccae75b99494b891038eef528027e9b6681ca612d37c457d2bd570bd8d67be
+  reason: 用官方 PyPI 增量锁定 tree-sitter-kotlin 1.1.0；未使用 --upgrade，其它依赖版本保持原样。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/documents.py
   sha256: 082c05a9866284b07a1ce0de0a884b2a4663d9b3fcfcb4fd0b73789ad2f938c2
   reason: 由 runtime 构建脚本生成，分发文档校验与核心源码一致。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/graph.py
-  sha256: a48dc01dc4b850797aeb828f2b8952626ed39012421cd00437dc36abd069f13e
-  reason: 由 runtime 构建脚本生成，分发图投影与核心源码一致。
+  sha256: 482b45b6696bc72ad08c8008b9eabba9556ca9ab0eaa673bdd7dc15eb5c16b41
+  reason: 合并 reader 自报的额外证据，XML matches/ambiguous 随 claim 保存；既有 provenance 和失败分类不变。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/readers.py
-  sha256: 09e8674657b4c030450204d0b655d5bb8e8b8bfcdc70814285ea9e58cb8cf83e
-  reason: 由 runtime 构建脚本生成，将 reader 插件实现纳入可分发 runtime。
+  sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
+  reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: skills/project-code-memory/assets/runtime/pyproject.toml
-  sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
-  reason: 生成 bundle 的可选依赖声明与项目根依赖配置一致。
+  sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
+  reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: src/general_game_development_rag/documents.py
   sha256: 082c05a9866284b07a1ce0de0a884b2a4663d9b3fcfcb4fd0b73789ad2f938c2
   reason: 只接受统一能力型 probe，拒绝任何 type 字段并提供改写指引；必要路径/符号校验不变。
 - path: src/general_game_development_rag/graph.py
-  sha256: a48dc01dc4b850797aeb828f2b8952626ed39012421cd00437dc36abd069f13e
-  reason: 删除 legacy 条件，统一记录所有成功探针的 provenance 和漂移元数据；未知异常统一 inspect_reader。
+  sha256: 482b45b6696bc72ad08c8008b9eabba9556ca9ab0eaa673bdd7dc15eb5c16b41
+  reason: 合并 reader 自报的额外证据，XML matches/ambiguous 随 claim 保存；既有 provenance 和失败分类不变。
 - path: src/general_game_development_rag/readers.py
-  sha256: 09e8674657b4c030450204d0b655d5bb8e8b8bfcdc70814285ea9e58cb8cf83e
-  reason: 移除 legacy 直达分支，保留 builtin-python 经统一能力/语言/reader 路由，其余插件逻辑不变。
+  sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
+  reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: pyproject.toml
-  sha256: a7c60fb1852d60d1f4cc31b8d6f184e6e559d93f902aaf4fc0694b92f0f585d6
-  reason: 声明可选 readers extra，并兼容当前与既有 Ruff 对可执行位规则的差异。
+  sha256: e6e516d45b3fdcfd402d2f0659c1dfb1b30777191aedfc4e501d88b9c7264846
+  reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: uv.lock
-  sha256: e3f1b1cb8a5ee7d1289756d4c3d549298a09b9e40795299dd2e816af9d38de29
-  reason: 锁定仓库开发环境中可选 TS/JS reader 的 tree-sitter 依赖。
+  sha256: 3b365217c97c38797b1376c223b7f3f7c60f879b12a26dabc16118e78e7dbd4d
+  reason: 用官方 PyPI 增量锁定 tree-sitter-kotlin 1.1.0；未使用 --upgrade，其它依赖版本保持原样。
 - path: tests/test_memory.py
-  sha256: dc499c428c7e0922fd7415c3dcab8477a628c7d5eade5ce99a9d0316bad28aa1
-  reason: 统一 helper 格式；验证 type 拒绝与改写指引、所有成功 claim 的完整 evidence、未知异常 inspect_reader，保留缺失依赖回归。
+  sha256: 657f1e79be60cfffbe0e726b58573ec9f226d49902a40d58999e9b79c787a453
+  reason: 新增 Kotlin 路由/版本证据、Gradle KTS 字面量和缺失依赖测试；覆盖 XML 属性、命名空间、重复匹配与解析失败，未削弱既有测试。
 - path: tools/build_skill_runtime.py
-  sha256: ca5327d6f69dc53a7f5a06599859ab76cc92a6be99786e4b1c1684ddef35b812
-  reason: 生成的分发 pyproject 同步可选 readers extra。
+  sha256: c790db522c769b7f2d6f2b538ffd894b051432b20ff4d5e770c7571c84be2f13
+  reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 ```

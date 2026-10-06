@@ -642,3 +642,195 @@ def test_cli_json_is_utf8_even_with_legacy_console_encoding(project):
     )
     payload = json.loads(result.stdout.decode("utf-8"))
     assert any(node.get("summary") == "会话有效期" for node in payload["nodes"])
+
+
+@pytest.fixture
+def android_probe(project):
+    def prepare(path, source, name, expected, **options):
+        target = project / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(source, encoding="utf-8")
+        probe = {"capability": "literal", "path": path, "name": name, **options}
+        document(
+            project,
+            "function",
+            value=expected,
+            fingerprint=digest((project / "session.py").read_bytes()),
+            probe=probe,
+        )
+        return target
+
+    return prepare
+
+
+def android_claim(project):
+    with sqlite3.connect(project / "ForAI/rag/.cache/graph.sqlite3") as db:
+        return json.loads(
+            db.execute("SELECT data FROM nodes WHERE id = 'claim:function:ttl'").fetchone()[0]
+        )
+
+
+@pytest.mark.parametrize("options", [{}, {"language": "kotlin"}, {"reader": "ts-kotlin"}])
+def test_kotlin_top_level_literal_and_provenance(project, android_probe, options):
+    from importlib.metadata import version
+
+    android_probe("Version.kt", 'const val VERSION: String = "1.0"', "VERSION", "1.0", **options)
+    assert build(project)["issues"] == []
+    claim = android_claim(project)
+    assert claim["observed"] == "1.0"
+    assert claim["probe_evidence"] == {
+        "reader": "ts-kotlin",
+        "version": "1",
+        "precision": "syntactic",
+        "language": "kotlin",
+        "capability": "literal",
+        "dependencies": {
+            "tree-sitter": version("tree-sitter"),
+            "tree-sitter-kotlin": version("tree-sitter-kotlin"),
+        },
+    }
+
+
+@pytest.mark.parametrize("name, expected", [("versionCode", 36), ("compileSdk", 35)])
+def test_gradle_kts_literal_assignments(project, android_probe, name, expected):
+    android_probe(
+        "app/build.gradle.kts",
+        'android { compileSdk = 35\n defaultConfig { versionCode = 36; versionName = "1.0" } }',
+        name,
+        expected,
+    )
+    assert build(project)["issues"] == []
+    claim = android_claim(project)
+    assert claim["observed"] == expected
+    assert claim["probe_evidence"]["reader"] == "ts-kotlin"
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "val OTHER = 36",
+        "val versionCode = computeVersion()",
+        "val versionCode = 36\nversionCode = 37",
+        "versionCode += 36",
+        'val versionCode = "$computed"',
+        "val versionCode = True",
+        "val versionCode = None",
+        'val versionCode = """a""" + """b"""',
+    ],
+)
+def test_kotlin_missing_dynamic_and_multiple_writes_are_unresolved(project, android_probe, source):
+    android_probe("app/build.gradle.kts", source, "versionCode", 36)
+    issues = build(project)["issues"]
+    assert len(issues) == 1
+    assert issues[0]["kind"] == "probe_unresolved"
+    assert issues[0]["action"] == "inspect_code"
+    claim = android_claim(project)
+    assert "observed" not in claim
+    assert "probe_evidence" not in claim
+
+
+@pytest.mark.parametrize("explicit_reader", [False, True])
+def test_missing_kotlin_dependency_requires_install_reader(
+    project, android_probe, monkeypatch, explicit_reader
+):
+    import builtins
+
+    original_import = builtins.__import__
+
+    def missing_kotlin(name, *args, **kwargs):
+        if name == "tree_sitter_kotlin":
+            raise ModuleNotFoundError("Simulated missing Kotlin grammar", name=name)
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", missing_kotlin)
+    options = {"reader": "ts-kotlin"} if explicit_reader else {}
+    android_probe("Version.kt", "const val VERSION = 36", "VERSION", 36, **options)
+    issues = build(project)["issues"]
+    assert len(issues) == 1
+    assert issues[0]["kind"] == "probe_unresolved"
+    assert issues[0]["action"] == "install_reader"
+    claim = android_claim(project)
+    assert "observed" not in claim
+    assert "probe_evidence" not in claim
+
+
+@pytest.mark.parametrize(
+    "literal, expected",
+    [
+        ("true", True),
+        ("null", None),
+        ('"true"', "true"),
+        ('"""C:\\temp"""', r"C:\temp"),
+        ('"still satisfies Const"', "still satisfies Const"),
+    ],
+)
+def test_kotlin_literal_decoding_preserves_language_semantics(
+    project, android_probe, literal, expected
+):
+    android_probe("Value.kt", f"val VALUE = {literal}", "VALUE", expected)
+    assert build(project)["issues"] == []
+    claim = android_claim(project)
+    assert claim["observed"] == expected
+    assert claim["probe_evidence"]["reader"] == "ts-kotlin"
+
+
+@pytest.mark.parametrize("name", ["versionName", "android:versionName"])
+def test_xml_attribute_literal_and_namespace_prefix(project, android_probe, name):
+    android_probe(
+        "app/src/main/AndroidManifest.xml",
+        '<manifest xmlns:android="http://schemas.android.com/apk/res/android" '
+        'android:versionName="1.0"/>',
+        name,
+        "1.0",
+    )
+    assert build(project)["issues"] == []
+    claim = android_claim(project)
+    assert claim["observed"] == "1.0"
+    assert claim["probe_evidence"] == {
+        "reader": "builtin-xml",
+        "version": "1",
+        "precision": "syntactic",
+        "language": "xml",
+        "capability": "literal",
+        "dependencies": {},
+        "matches": 1,
+    }
+
+
+@pytest.mark.parametrize("second, ambiguous", [("1.0", False), ("2.0", True)])
+def test_xml_multiple_attributes_report_matches_and_ambiguity(
+    project, android_probe, second, ambiguous
+):
+    android_probe(
+        "resources.xml",
+        f'<resources><item versionName="1.0"/><item versionName="{second}"/></resources>',
+        "versionName",
+        "1.0",
+        language="xml",
+        reader="builtin-xml",
+    )
+    assert build(project)["issues"] == []
+    claim = android_claim(project)
+    assert claim["observed"] == "1.0"
+    assert claim["probe_evidence"]["matches"] == 2
+    if ambiguous:
+        assert claim["probe_evidence"]["ambiguous"] is True
+    else:
+        assert "ambiguous" not in claim["probe_evidence"]
+
+
+@pytest.mark.parametrize(
+    "source, action",
+    [("<manifest/>", "inspect_code"), ("<manifest>", "inspect_reader")],
+)
+def test_xml_missing_attribute_and_malformed_source_are_unresolved(
+    project, android_probe, source, action
+):
+    android_probe("AndroidManifest.xml", source, "versionName", "1.0")
+    issues = build(project)["issues"]
+    assert len(issues) == 1
+    assert issues[0]["kind"] == "probe_unresolved"
+    assert issues[0]["action"] == action
+    claim = android_claim(project)
+    assert "observed" not in claim
+    assert "probe_evidence" not in claim

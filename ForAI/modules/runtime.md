@@ -31,10 +31,12 @@ summary: 描述当前 CLI、文档解析、图构建、确定性扫描与 Git �
 - `sync` 和 `query` 复用未变化的文档向量，按内容和模型配置隔离缓存。`scan` 不请求 embedding。详见 [embedding 实现](embeddings.md)。
 - 功能文档无来源产生 unverified_description；无核验哈希或指纹变化产生 needs_review；不存在的文件产生 missing_source。
 - 相同类型、主体、属性与 scope 的 active 断言值不一致时产生候选冲突。proposed/superseded 不参与扫描；没有自动单位转换。
-- Probe 只接受 capability、language、reader 统一写法；出现 type 字段明确报错并提示 capability: literal with language: python。reader 注册项声明 kind、模块/入口、precision、能力和语言。builtin-python 的 Python AST 与可选 tree-sitter TS/JS reader 仅静态读取，不导入执行项目。未安装、未启用、不兼容、冲突或无法判定均产生带 action 的 probe_unresolved；所有成功探针都记录 reader、版本、precision、language、capability 和 dependencies。
+- Probe 只接受 capability、language、reader 统一写法；出现 type 字段明确报错并提示 capability: literal with language: python。reader 注册项声明 kind、模块/入口、precision、能力和语言。builtin-python 的 Python AST、可选 tree-sitter TS/JS 与 Kotlin reader、标准库 XML reader 均仅静态读取，不导入执行项目。未安装、未启用、不兼容、冲突或无法判定均产生带 action 的 probe_unresolved；所有成功探针都记录 reader、版本、precision、language、capability 和 dependencies。
 - 探针与 functional 声明不同产生 description_drift；与 design 要求不同产生 design_deviation。不会自动改写任何代码、功能说明或设计。
 - `coverage --staged` 仅读取暂存区；`--base REF` 读取 REF 到 HEAD 的聚合差异。变更记录必须在相应差异中，覆盖哈希必须匹配代码 blob；删除使用 deleted。
 - TS/JS literal reader 依赖可选 `readers` extra；无该依赖时不会静默跳过探针。
+- Android literal reader：`ts-kotlin` 通过可选 tree-sitter-kotlin grammar 读取 `.kt`/`.kts`，与 TS/JS 共用声明遍历；支持 const val、类型注解及 Gradle KTS DSL 块内的 versionCode/compileSdk 等简单赋值。跳过函数/类声明体，动态值或多重写入仍 unresolved，不执行 Kotlin/Gradle、不推断构建变体。缺失 grammar 依赖使用 install_reader。
+- `builtin-xml` 仅用标准库 ElementTree 读取 `.xml` 属性，name 可用局部属性名或文档声明的命名空间前缀。按文档序返回第一个字符串值；evidence 总是记录 matches，多个匹配且值不同才记录 ambiguous: true。找不到属性使用 inspect_code；畸形 XML 使用 inspect_reader，不解析资源引用。Python reader 可通过 reports_evidence 选择接收额外的 evidence 字典，不改变原有返回值契约或其它 reader 的证据形状。
 - 未注册的 reader 名使用 inspect_reader，只有已注册但未启用的 reader 使用 enable_reader。所有成功 probe_evidence 的 dependencies 按 reader 声明的依赖包名读取已安装版本元数据；缺失的版本留空，不编造。未预期的 reader 异常统一使用 inspect_reader；静态代码读取错误仍使用 inspect_code。
 - CI 的 Ubuntu/Windows 矩阵**钉住 runner 镜像**（`ubuntu-24.04` / `windows-2025`，刻意不用 `-latest`，免得镜像在脚下换代）与 uv 0.12.23；sync 与 run 显式选择 readers extra 并校验锁文件，再运行 Ruff、pytest、项目 runtime 扫描与构建。push 到任意分支与 pull_request 都触发（自有仓库，每次推送都要 CI 反馈）。测试通过模拟 tree_sitter 导入失败验证 install_reader，失败 claim 不产生 observed 或成功证据。
 - 覆盖检查当前使用内置代码后缀集合，不覆盖配置/资源和任意其他语言，不验证变更原因的语义真实性。
@@ -48,12 +50,14 @@ v0.2 适用于本地单写入者；并行扫描和原子多文件快照尚未协
 ```rag
 kind: functional
 sources:
+- path: skills/project-code-memory/references/document-contract.md
+  sha256: 43a7864b7f820ac24da83f78d9fdb3f0a54f1abdd77e82824f4de66b113a0608
 - path: .github/workflows/ci.yml
   sha256: faf9a132d7b7421255bdc1633dd2cdaf8d63479c04ac96c04a25c2f2cc076e97
 - path: ForAI/rag/pyproject.toml
-  sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
+  sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
 - path: ForAI/rag/uv.lock
-  sha256: e95007aeb97f1dab88df203e5f70bd9aab39b9ca38fdfd005568c337c5470f8f
+  sha256: d5ccae75b99494b891038eef528027e9b6681ca612d37c457d2bd570bd8d67be
 - path: ForAI/rag/manage.py
   sha256: b790a235e2feade1e8c2c41a227a5bb6e14241f3cc820359813b16c2d67381bc
 - path: ForAI/rag/src/general_game_development_rag/__init__.py
@@ -67,9 +71,9 @@ sources:
 - path: ForAI/rag/src/general_game_development_rag/embeddings.py
   sha256: 6e168e898536b8d092595e45acc71e11febdce6383c81843bdb1a9413c52bc94
 - path: ForAI/rag/src/general_game_development_rag/graph.py
-  sha256: a48dc01dc4b850797aeb828f2b8952626ed39012421cd00437dc36abd069f13e
+  sha256: 482b45b6696bc72ad08c8008b9eabba9556ca9ab0eaa673bdd7dc15eb5c16b41
 - path: ForAI/rag/src/general_game_development_rag/readers.py
-  sha256: 09e8674657b4c030450204d0b655d5bb8e8b8bfcdc70814285ea9e58cb8cf83e
+  sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
 - path: skills/project-code-memory/assets/runtime/manage.py
   sha256: b790a235e2feade1e8c2c41a227a5bb6e14241f3cc820359813b16c2d67381bc
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/__init__.py
@@ -83,9 +87,9 @@ sources:
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/embeddings.py
   sha256: 6e168e898536b8d092595e45acc71e11febdce6383c81843bdb1a9413c52bc94
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/graph.py
-  sha256: a48dc01dc4b850797aeb828f2b8952626ed39012421cd00437dc36abd069f13e
+  sha256: 482b45b6696bc72ad08c8008b9eabba9556ca9ab0eaa673bdd7dc15eb5c16b41
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/readers.py
-  sha256: 09e8674657b4c030450204d0b655d5bb8e8b8bfcdc70814285ea9e58cb8cf83e
+  sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
 - path: skills/project-code-memory/scripts/bootstrap.py
   sha256: 4fd49e5ff0a052e6bec0fc742794f89e35797e311c37f657e9c5dda3873d3c6a
 - path: src/general_game_development_rag/__init__.py
@@ -99,23 +103,23 @@ sources:
 - path: src/general_game_development_rag/embeddings.py
   sha256: 6e168e898536b8d092595e45acc71e11febdce6383c81843bdb1a9413c52bc94
 - path: src/general_game_development_rag/graph.py
-  sha256: a48dc01dc4b850797aeb828f2b8952626ed39012421cd00437dc36abd069f13e
+  sha256: 482b45b6696bc72ad08c8008b9eabba9556ca9ab0eaa673bdd7dc15eb5c16b41
 - path: src/general_game_development_rag/readers.py
-  sha256: 09e8674657b4c030450204d0b655d5bb8e8b8bfcdc70814285ea9e58cb8cf83e
+  sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
 - path: tests/test_distribution.py
   sha256: 1567e3f9051208fdf69ab11c906b1b94a553a35a3ee6fd90f8868077f89a118c
 - path: tests/test_embeddings.py
   sha256: 97838b82938d3b0b27acdea1ee377d008795484b51b998e84cd56f8157211ec6
 - path: tests/test_memory.py
-  sha256: dc499c428c7e0922fd7415c3dcab8477a628c7d5eade5ce99a9d0316bad28aa1
+  sha256: 657f1e79be60cfffbe0e726b58573ec9f226d49902a40d58999e9b79c787a453
 - path: tools/build_skill_runtime.py
-  sha256: ca5327d6f69dc53a7f5a06599859ab76cc92a6be99786e4b1c1684ddef35b812
+  sha256: c790db522c769b7f2d6f2b538ffd894b051432b20ff4d5e770c7571c84be2f13
 - path: pyproject.toml
-  sha256: a7c60fb1852d60d1f4cc31b8d6f184e6e559d93f902aaf4fc0694b92f0f585d6
+  sha256: e6e516d45b3fdcfd402d2f0659c1dfb1b30777191aedfc4e501d88b9c7264846
 - path: uv.lock
-  sha256: 3c6c4ce9cab6987c8197e44c5c47b86c73b96ca8ea7f1bba79d515eeee2b5502
+  sha256: 3b365217c97c38797b1376c223b7f3f7c60f879b12a26dabc16118e78e7dbd4d
 - path: skills/project-code-memory/assets/runtime/pyproject.toml
-  sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
+  sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
 - path: tools/install_project.py
   sha256: 36d074c33539aa96ff6b3d7ce3805514470c3aecbb105d24d5324312e616daa3
 ```

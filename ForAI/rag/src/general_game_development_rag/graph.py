@@ -145,7 +145,10 @@ def build(root: Path) -> dict:
                 if current is None:
                     raise MemoryError("Source file does not exist")
                 reader, language = resolve(probe)
-                observed = read(reader, project_path(root, probe["path"]), probe["name"])
+                details = {}
+                observed = read(
+                    reader, project_path(root, probe["path"]), probe["name"], evidence=details
+                )
             except ProbeError as exc:
                 issue("probe_unresolved", [claim_id, code_id], str(exc), exc.action)
                 continue
@@ -157,6 +160,7 @@ def build(root: Path) -> dict:
                 continue
             nodes[claim_id]["observed"] = observed
             evidence = {
+                **details,
                 "reader": reader.name,
                 "version": reader.version,
                 "precision": reader.precision,

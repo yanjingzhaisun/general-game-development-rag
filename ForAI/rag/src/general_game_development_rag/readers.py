@@ -9,6 +9,7 @@ import json
 import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -29,6 +30,7 @@ class Reader:
     command: str | None = None
     dependency: str | None = None
     dependency_packages: tuple[str, ...] = ()
+    reports_evidence: bool = False
 
     def dependency_versions(self) -> dict[str, str]:
         """Report installed dependency versions; unavailable metadata stays absent."""
@@ -70,6 +72,29 @@ REGISTRY = (
         dependency="tree_sitter_typescript",
         dependency_packages=("tree-sitter", "tree-sitter-typescript"),
     ),
+    Reader(
+        "ts-kotlin",
+        "python",
+        "general_game_development_rag.readers",
+        "syntactic",
+        ("literal",),
+        ("kotlin",),
+        "1",
+        "_kotlin_literal",
+        dependency="tree_sitter_kotlin",
+        dependency_packages=("tree-sitter", "tree-sitter-kotlin"),
+    ),
+    Reader(
+        "builtin-xml",
+        "python",
+        "general_game_development_rag.readers",
+        "syntactic",
+        ("literal",),
+        ("xml",),
+        "1",
+        "_xml_literal",
+        reports_evidence=True,
+    ),
 )
 
 EXTENSIONS = {
@@ -80,6 +105,9 @@ EXTENSIONS = {
     ".jsx": "javascript",
     ".mjs": "javascript",
     ".cjs": "javascript",
+    ".kt": "kotlin",
+    ".kts": "kotlin",
+    ".xml": "xml",
 }
 
 
@@ -147,47 +175,104 @@ def _strip_ts_assertion(source: str) -> str:
     return source
 
 
-def ts_literal_hits(path: Path, name: str):
+def _grammar(path: Path, language: str):
+    """Select an installed grammar without importing any target-project code."""
     try:
-        import tree_sitter_typescript as tsts
+        if language == "kotlin":
+            import tree_sitter_kotlin
+
+            return tree_sitter_kotlin.language()
+        import tree_sitter_typescript
+
+        return (
+            tree_sitter_typescript.language_tsx()
+            if path.suffix.lower() in {".tsx", ".jsx"}
+            else tree_sitter_typescript.language_typescript()
+        )
+    except ImportError as exc:
+        raise ProbeError(
+            f"Missing {language} grammar; install the readers extra", "install_reader"
+        ) from exc
+
+
+def _assignment(node, language: str):
+    """Map language-specific declaration nodes to the shared name/value pair."""
+    if language != "kotlin":
+        if node.type == "variable_declarator":
+            return node.child_by_field_name("name"), node.child_by_field_name("value")
+    elif node.type == "assignment":
+        return node.child_by_field_name("left"), node.child_by_field_name("right")
+    elif node.type == "property_declaration":
+        declaration = next(
+            (child for child in node.named_children if child.type == "variable_declaration"), None
+        )
+        if declaration is not None:
+            identifier = next(
+                (child for child in declaration.named_children if child.type == "identifier"), None
+            )
+            equals = next((i for i, child in enumerate(node.children) if child.type == "="), None)
+            if equals is not None and equals + 1 < len(node.children):
+                return identifier, node.children[equals + 1]
+    return None, None
+
+
+def _walk_declarations(root, language: str):
+    """Share traversal, retaining TS top-level scope and Kotlin script DSL blocks."""
+    stack = list(reversed(root.named_children))
+    while stack:
+        node = stack.pop()
+        if language == "kotlin":
+            if node.type in {"function_declaration", "class_declaration", "object_declaration"}:
+                continue
+        elif node.type not in {"export_statement", "lexical_declaration", "variable_declarator"}:
+            continue
+        yield node
+        stack.extend(reversed(node.named_children))
+
+
+def ts_literal_hits(path: Path, name: str, language: str = "typescript"):
+    try:
         from tree_sitter import Language, Parser
     except ImportError as exc:
-        raise ProbeError("tree-sitter reader dependencies are missing", "install_reader") from exc
-    grammar = (
-        tsts.language_tsx()
-        if path.suffix.lower() in {".tsx", ".jsx"}
-        else tsts.language_typescript()
-    )
-    language = Language(grammar)
-    parser = Parser(language)
+        raise ProbeError(
+            "tree-sitter is missing; install the readers extra", "install_reader"
+        ) from exc
+    parser = Parser(Language(_grammar(path, language)))
     source = path.read_bytes()
     tree = parser.parse(source)
     root = tree.root_node
-    declarations = []
-    for child in root.children:
-        candidate = child
-        if candidate.type == "export_statement":
-            candidate = next(
-                (n for n in candidate.named_children if n.type == "lexical_declaration"), None
-            )
-        if candidate and candidate.type == "lexical_declaration":
-            declarations.extend(candidate.named_children)
     hits = []
-    for declaration in declarations:
-        if declaration.type != "variable_declarator":
-            continue
-        identifier = declaration.child_by_field_name("name")
-        value = declaration.child_by_field_name("value")
+    for declaration in _walk_declarations(root, language):
+        identifier, value = _assignment(declaration, language)
         if identifier is None or value is None:
             continue
         if source[identifier.start_byte : identifier.end_byte].decode() != name:
             continue
-        raw = _strip_ts_assertion(source[value.start_byte : value.end_byte].decode())
+        raw = source[value.start_byte : value.end_byte].decode()
+        if language == "kotlin":
+            # Interpolation and compound writes cannot establish a literal value.
+            if "$" in raw or (
+                declaration.type == "assignment"
+                and source[identifier.end_byte : value.start_byte].strip() != b"="
+            ):
+                raise MemoryError(f"Value for {name} is dynamic; inspect the Kotlin assignment")
+            if root.has_error:
+                raise MemoryError("Invalid Kotlin source; inspect its syntax")
+            if value.type == "identifier" and raw not in {"true", "false", "null"}:
+                raise MemoryError(f"Value for {name} is a reference; inspect the Kotlin assignment")
+            if value.type == "multiline_string_literal":
+                hits.append(raw[3:-3])
+                continue
+        else:
+            raw = _strip_ts_assertion(raw)
         if not raw or raw.startswith(("(", "function", "new ")):
             raise MemoryError(f"Value for {name} is not a supported literal")
-        raw = re.sub(r"\btrue\b", "True", raw)
-        raw = re.sub(r"\bfalse\b", "False", raw)
-        raw = re.sub(r"\bnull\b", "None", raw)
+        if language == "kotlin":
+            raw = {"true": "True", "false": "False", "null": "None"}.get(raw, raw)
+        else:
+            raw = re.sub(r"\btrue\b", "True", raw)
+            raw = re.sub(r"\bfalse\b", "False", raw)
+            raw = re.sub(r"\bnull\b", "None", raw)
         try:
             parsed = ast.literal_eval(raw)
         except (SyntaxError, ValueError):
@@ -199,14 +284,63 @@ def ts_literal_hits(path: Path, name: str):
     return hits
 
 
-def _ts_literal(path: Path, name: str):
-    hits = ts_literal_hits(path, name)
+def _ts_literal(path: Path, name: str, language: str = "typescript"):
+    hits = ts_literal_hits(path, name, language)
     if len(hits) != 1:
+        if language == "kotlin":
+            raise MemoryError(
+                f"Expected one static assignment for {name}; inspect the Kotlin source"
+            )
         raise MemoryError(f"Expected one top-level assignment for {name}")
     return hits[0]
 
 
-def read(reader: Reader, path: Path, name: str):
+def _kotlin_literal(path: Path, name: str):
+    return _ts_literal(path, name, "kotlin")
+
+
+def _xml_literal(path: Path, name: str, *, evidence: dict | None = None):
+    """Read the first matching attribute and report duplicates, without executing XML."""
+    values = []
+    namespaces = [{}]
+    pending = {}
+    try:
+        with path.open("rb") as stream:
+            for event, item in ET.iterparse(stream, events=("start-ns", "start", "end")):
+                if event == "start-ns":
+                    prefix, uri = item
+                    pending[prefix] = uri
+                elif event == "start":
+                    namespaces.append(namespaces[-1] | pending)
+                    pending = {}
+                    if ":" in name:
+                        prefix, local = name.split(":", 1)
+                        uri = namespaces[-1].get(prefix)
+                        key = f"{{{uri}}}{local}" if uri is not None else name
+                        values.extend(value for attr, value in item.attrib.items() if attr == key)
+                    else:
+                        values.extend(
+                            value
+                            for attr, value in item.attrib.items()
+                            if attr.rsplit("}", 1)[-1] == name
+                        )
+                else:
+                    namespaces.pop()
+                    item.clear()
+    except ET.ParseError as exc:
+        raise ProbeError(
+            f"Invalid XML in {path}; inspect XML syntax: {exc}", "inspect_reader"
+        ) from exc
+    if not values:
+        raise MemoryError(f"XML attribute {name} not found; inspect the probe path and name")
+    if evidence is not None:
+        evidence["matches"] = len(values)
+        if len(set(values)) > 1:
+            evidence["ambiguous"] = True
+    return values[0]
+
+
+def read(reader: Reader, path: Path, name: str, *, evidence: dict | None = None):
     if reader.kind == "command":
         if not reader.command:
             raise ProbeError(f"Reader command is not configured: {reader.name}", "inspect_reader")
@@ -238,4 +372,6 @@ def read(reader: Reader, path: Path, name: str):
         raise ProbeError(
             f"Reader contract is unavailable: {reader.name}", "inspect_reader"
         ) from exc
+    if reader.reports_evidence:
+        return handler(path, name, evidence=evidence)
     return handler(path, name)
