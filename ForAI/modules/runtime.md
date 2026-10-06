@@ -36,7 +36,7 @@ summary: 描述当前 CLI、文档解析、图构建、确定性扫描与 Git �
 - `coverage --staged` 仅读取暂存区；`--base REF` 读取 REF 到 HEAD 的聚合差异。变更记录必须在相应差异中，覆盖哈希必须匹配代码 blob；删除使用 deleted。
 - TS/JS literal reader 依赖可选 `readers` extra；无该依赖时不会静默跳过探针。
 - 未注册的 reader 名使用 inspect_reader，只有已注册但未启用的 reader 使用 enable_reader。所有成功 probe_evidence 的 dependencies 按 reader 声明的依赖包名读取已安装版本元数据；缺失的版本留空，不编造。未预期的 reader 异常统一使用 inspect_reader；静态代码读取错误仍使用 inspect_code。
-- CI 的 Ubuntu/Windows 矩阵固定 uv 0.12.23；sync 与 run 显式选择 readers extra 并校验锁文件，再运行 Ruff、pytest、项目 runtime 扫描与构建。push 到任意分支与 pull_request 都触发（自有仓库，每次推送都要 CI 反馈）。测试通过模拟 tree_sitter 导入失败验证 install_reader，失败 claim 不产生 observed 或成功证据。
+- CI 的 Ubuntu/Windows 矩阵**钉住 runner 镜像**（`ubuntu-24.04` / `windows-2025`，刻意不用 `-latest`，免得镜像在脚下换代）与 uv 0.12.23；sync 与 run 显式选择 readers extra 并校验锁文件，再运行 Ruff、pytest、项目 runtime 扫描与构建。push 到任意分支与 pull_request 都触发（自有仓库，每次推送都要 CI 反馈）。测试通过模拟 tree_sitter 导入失败验证 install_reader，失败 claim 不产生 observed 或成功证据。
 - 覆盖检查当前使用内置代码后缀集合，不覆盖配置/资源和任意其他语言，不验证变更原因的语义真实性。
 - `scan --write-report` 写 ForAI/conflicts/scan.md；report 文档不回流检索。问题 ID 稳定，但处理历史需另存文档。
 - CLI 退出码 0 表示成功执行，1 表示覆盖失败、严格扫描有发现或 doctor 尚无可用配置，2 表示输入/运行错误。
@@ -49,7 +49,7 @@ v0.2 适用于本地单写入者；并行扫描和原子多文件快照尚未协
 kind: functional
 sources:
 - path: .github/workflows/ci.yml
-  sha256: f341b7149e4297ec9017d5b1ae15920f86b9f835aab0837c114a5a871e2acc93
+  sha256: faf9a132d7b7421255bdc1633dd2cdaf8d63479c04ac96c04a25c2f2cc076e97
 - path: ForAI/rag/pyproject.toml
   sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
 - path: ForAI/rag/uv.lock

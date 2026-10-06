@@ -15,7 +15,8 @@ jobs:
   validate:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # pinned on purpose: the runner should not change under us
+        os: [ubuntu-24.04, windows-2025]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
