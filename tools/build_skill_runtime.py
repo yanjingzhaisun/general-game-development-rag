@@ -44,6 +44,9 @@ build-backend = "hatchling.build"
         newline="\n",
     )
     shutil.copyfile(ROOT / "LICENSE", TARGET / "LICENSE")
+    # 依赖锁同样属于分发件：忘同步会让目标项目拿到过期的依赖集。
+    # ForAI/rag/uv.lock 由 `uv lock` 在该目录生成，这里只做复制。
+    shutil.copyfile(ROOT / "ForAI/rag/uv.lock", TARGET / "uv.lock")
     (TARGET / ".python-version").write_text("3.12\n", encoding="utf-8", newline="\n")
     (TARGET / ".gitignore").write_text(RUNTIME_GITIGNORE, encoding="utf-8", newline="\n")
     (TARGET / "embedding.example.toml").write_text(DEFAULT_CONFIG, encoding="utf-8", newline="\n")
