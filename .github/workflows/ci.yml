@@ -37,3 +37,31 @@ jobs:
         shell: bash
         run: uv run --locked --extra readers ggrag coverage --base "$BASE_SHA"
       - run: uv build
+
+  # dev 上 CI 全绿后，自动把 main 快进到 dev。
+  # 刻意用 needs: validate 而不是 workflow_run —— 后者要求 workflow 已存在于默认分支，
+  # 得先手动合一次才能自举；这个写法第一次推 dev 就生效。
+  promote:
+    needs: validate
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Fast-forward main to dev
+        run: |
+          set -euo pipefail
+          git fetch origin dev
+          echo "main: $(git rev-parse HEAD)"
+          echo "dev:  $(git rev-parse origin/dev)"
+          # main 若存在 dev 没有的提交，快进就不成立 —— 宁可停下报错，也不覆盖
+          if ! git merge-base --is-ancestor HEAD origin/dev; then
+            echo "::error::main has commits that dev does not; refusing to fast-forward"
+            exit 1
+          fi
+          git merge --ff-only origin/dev
+          git push origin HEAD:main

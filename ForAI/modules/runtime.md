@@ -38,7 +38,7 @@ summary: 描述当前 CLI、文档解析、图构建、确定性扫描与 Git �
 - Android literal reader：`ts-kotlin` 通过可选 tree-sitter-kotlin grammar 读取 `.kt`/`.kts`，与 TS/JS 共用声明遍历；支持 const val、类型注解及 Gradle KTS DSL 块内的 versionCode/compileSdk 等简单赋值。跳过函数/类声明体，动态值或多重写入仍 unresolved，不执行 Kotlin/Gradle、不推断构建变体。缺失 grammar 依赖使用 install_reader。
 - `builtin-xml` 仅用标准库 ElementTree 读取 `.xml` 属性，name 可用局部属性名或文档声明的命名空间前缀。按文档序返回第一个字符串值；evidence 总是记录 matches，多个匹配且值不同才记录 ambiguous: true。找不到属性使用 inspect_code；畸形 XML 使用 inspect_reader，不解析资源引用。Python reader 可通过 reports_evidence 选择接收额外的 evidence 字典，不改变原有返回值契约或其它 reader 的证据形状。
 - 未注册的 reader 名使用 inspect_reader，只有已注册但未启用的 reader 使用 enable_reader。所有成功 probe_evidence 的 dependencies 按 reader 声明的依赖包名读取已安装版本元数据；缺失的版本留空，不编造。未预期的 reader 异常统一使用 inspect_reader；静态代码读取错误仍使用 inspect_code。
-- CI 的 Ubuntu/Windows 矩阵**钉住 runner 镜像**（`ubuntu-24.04` / `windows-2025`，刻意不用 `-latest`，免得镜像在脚下换代）与 uv 0.12.23；sync 与 run 显式选择 readers extra 并校验锁文件，再运行 Ruff、pytest、项目 runtime 扫描与构建。push 到任意分支与 pull_request 都触发（自有仓库，每次推送都要 CI 反馈）。测试通过模拟 tree_sitter 导入失败验证 install_reader，失败 claim 不产生 observed 或成功证据。
+- CI 的 Ubuntu/Windows 矩阵**钉住 runner 镜像**（`ubuntu-24.04` / `windows-2025`，刻意不用 `-latest`，免得镜像在脚下换代）与 uv 0.12.23；sync 与 run 显式选择 readers extra 并校验锁文件，再运行 Ruff、pytest、项目 runtime 扫描与构建。push 到任意分支与 pull_request 都触发（自有仓库，每次推送都要 CI 反馈）。**dev 分支上 validate 两个矩阵全绿后，promote job 自动把 main 快进到 dev**（ff-only；main 若存在 dev 没有的提交则报错停下，绝不覆盖）。测试通过模拟 tree_sitter 导入失败验证 install_reader，失败 claim 不产生 observed 或成功证据。
 - 覆盖检查当前使用内置代码后缀集合，不覆盖配置/资源和任意其他语言，不验证变更原因的语义真实性。
 - `scan --write-report` 写 ForAI/conflicts/scan.md；report 文档不回流检索。问题 ID 稳定，但处理历史需另存文档。
 - CLI 退出码 0 表示成功执行，1 表示覆盖失败、严格扫描有发现或 doctor 尚无可用配置，2 表示输入/运行错误。
@@ -53,7 +53,7 @@ sources:
 - path: skills/project-code-memory/references/document-contract.md
   sha256: 43a7864b7f820ac24da83f78d9fdb3f0a54f1abdd77e82824f4de66b113a0608
 - path: .github/workflows/ci.yml
-  sha256: faf9a132d7b7421255bdc1633dd2cdaf8d63479c04ac96c04a25c2f2cc076e97
+  sha256: 9bc690b5de8736fff1b9407ad5eb52fb795f56ab517c6a01d9db2cab503662c9
 - path: ForAI/rag/pyproject.toml
   sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
 - path: ForAI/rag/uv.lock
