@@ -153,6 +153,11 @@ uv run --directory ForAI/rag python manage.py coverage --staged
 覆盖检查只认可暂存区里的变更记录与代码 blob。若 Git 会转换换行，记录的哈希
 必须与暂存 blob 一致；不要拿未暂存的文档或不同换行的工作文件冒充覆盖。
 
+安装器写入的 `ForAI/rag/` 与 `.agents/skills/project-code-memory/` 携带上游的 MIT
+许可声明（`LICENSE`），**仅覆盖这两处的代码**。目标项目自身的许可、`pyproject.toml`
+与 `README` 不受影响，也不由安装器决定；若与项目现有许可策略冲突，按项目要求处理
+这两处副本，不要据此改写项目本身的许可声明。
+
 ## 6. 开发后的日常维护
 
 1. 开始任务：读 ForAI/index.md，检索并回到代码证据。

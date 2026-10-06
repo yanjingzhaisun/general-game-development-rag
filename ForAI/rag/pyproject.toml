@@ -3,7 +3,6 @@ name = "general-game-development-rag"
 version = "0.3.0"
 description = "Project-owned ForAI memory runtime"
 license = "MIT"
-license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = ["pyyaml>=6.0.2,<7"]
 

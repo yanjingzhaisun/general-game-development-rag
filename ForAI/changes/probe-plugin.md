@@ -95,7 +95,7 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: ForAI/rag/pyproject.toml
-  sha256: e39f08d4df44b6b86add27ae147237b0eda39cd37adfe76305b460f005b5ca5c
+  sha256: 3949e175e0de4bdc11ffcc2adfdd027266682469f75c3bd9f7c47f398c6d1f2d
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: ForAI/rag/uv.lock
   sha256: 8e4fc73a4986bd763bce722b3b9849e3e4d8327597cb82c05688d61ad956bdc3

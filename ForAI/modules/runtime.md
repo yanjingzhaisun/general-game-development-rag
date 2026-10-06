@@ -55,7 +55,7 @@ sources:
 - path: .github/workflows/ci.yml
   sha256: 9bc690b5de8736fff1b9407ad5eb52fb795f56ab517c6a01d9db2cab503662c9
 - path: ForAI/rag/pyproject.toml
-  sha256: e39f08d4df44b6b86add27ae147237b0eda39cd37adfe76305b460f005b5ca5c
+  sha256: 3949e175e0de4bdc11ffcc2adfdd027266682469f75c3bd9f7c47f398c6d1f2d
 - path: ForAI/rag/uv.lock
   sha256: 8e4fc73a4986bd763bce722b3b9849e3e4d8327597cb82c05688d61ad956bdc3
 - path: ForAI/rag/manage.py

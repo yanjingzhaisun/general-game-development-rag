@@ -109,4 +109,9 @@ uv build
 
 ## 许可
 
-MIT，见 [LICENSE](LICENSE)。
+本仓库为 MIT，见 [LICENSE](LICENSE)。
+
+许可只覆盖本仓库的代码。分发到目标项目时，声明仅随安装器写入的两处副本走——
+`ForAI/rag/`（运行时）与 `.agents/skills/project-code-memory/`（项目级 skill）。
+**目标项目自身的许可不由本管线决定**：它的 `LICENSE`、`pyproject.toml` 与 `README`
+都不在安装范围内，也不会被安装器读写。

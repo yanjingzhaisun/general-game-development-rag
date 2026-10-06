@@ -26,6 +26,8 @@ htmlcov/
 !.env.template
 ForAI/rag/embedding.toml
 ForAI/rag/.models/
+# 自举运行时里由 install_project.py 复制进来的许可声明；本仓代码由根 LICENSE 覆盖
+ForAI/rag/LICENSE
 
 # OS metadata
 .DS_Store
