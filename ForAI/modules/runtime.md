@@ -53,7 +53,7 @@ sources:
 - path: ForAI/rag/pyproject.toml
   sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
 - path: ForAI/rag/uv.lock
-  sha256: 4e53dfa5f4f38329c2032ad72707a5d2eadac713588c2e293ae702c5343cd358
+  sha256: e95007aeb97f1dab88df203e5f70bd9aab39b9ca38fdfd005568c337c5470f8f
 - path: ForAI/rag/manage.py
   sha256: b790a235e2feade1e8c2c41a227a5bb6e14241f3cc820359813b16c2d67381bc
 - path: ForAI/rag/src/general_game_development_rag/__init__.py
@@ -113,7 +113,7 @@ sources:
 - path: pyproject.toml
   sha256: a7c60fb1852d60d1f4cc31b8d6f184e6e559d93f902aaf4fc0694b92f0f585d6
 - path: uv.lock
-  sha256: e3f1b1cb8a5ee7d1289756d4c3d549298a09b9e40795299dd2e816af9d38de29
+  sha256: 3c6c4ce9cab6987c8197e44c5c47b86c73b96ca8ea7f1bba79d515eeee2b5502
 - path: skills/project-code-memory/assets/runtime/pyproject.toml
   sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
 - path: tools/install_project.py
