@@ -23,7 +23,7 @@ def main():
     (TARGET / "pyproject.toml").write_text(
         """[project]
 name = "general-game-development-rag"
-version = "0.3.0"
+version = "0.3.1"
 description = "Project-owned ForAI memory runtime"
 license = "MIT"
 license-files = ["LICENSE"]

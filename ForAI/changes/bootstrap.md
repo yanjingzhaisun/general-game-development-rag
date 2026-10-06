@@ -32,7 +32,7 @@ covers:
   sha256: b790a235e2feade1e8c2c41a227a5bb6e14241f3cc820359813b16c2d67381bc
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: ForAI/rag/src/general_game_development_rag/__init__.py
-  sha256: 85e85624e6fc79febcaf2dfda1b289cd223434f2c81562b6c81a330b78ed3195
+  sha256: bada5705d1954b4853bec7818d8aa9d7d36bb9101554fed46bcd51da4ecc34c3
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: ForAI/rag/src/general_game_development_rag/cli.py
   sha256: e7e651f93d1feaceeb9151f4cf34ac8098e004e643c2595cf01b52c65ebd8797
@@ -50,7 +50,7 @@ covers:
   sha256: b790a235e2feade1e8c2c41a227a5bb6e14241f3cc820359813b16c2d67381bc
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/__init__.py
-  sha256: 85e85624e6fc79febcaf2dfda1b289cd223434f2c81562b6c81a330b78ed3195
+  sha256: bada5705d1954b4853bec7818d8aa9d7d36bb9101554fed46bcd51da4ecc34c3
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/cli.py
   sha256: e7e651f93d1feaceeb9151f4cf34ac8098e004e643c2595cf01b52c65ebd8797
@@ -68,7 +68,7 @@ covers:
   sha256: 9cd08aeff5cf2ed8ff9d909cfafca208858a1d5736e2347296d0419f8375f6d1
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: src/general_game_development_rag/__init__.py
-  sha256: 85e85624e6fc79febcaf2dfda1b289cd223434f2c81562b6c81a330b78ed3195
+  sha256: bada5705d1954b4853bec7818d8aa9d7d36bb9101554fed46bcd51da4ecc34c3
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: src/general_game_development_rag/cli.py
   sha256: e7e651f93d1feaceeb9151f4cf34ac8098e004e643c2595cf01b52c65ebd8797
@@ -89,9 +89,9 @@ covers:
   sha256: eea3a0b814f5352b8dd1157d0765211e99c41c0dac92ad03b49ed80a1110090c
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: tools/build_skill_runtime.py
-  sha256: dc9ebb6175aaab6087e47358bfbb362f5c1c4f1d5c61cbf8d66dd8ab7ca498ee
+  sha256: 9f35fdeb70a57c115a9f6cc9eea253a2e30ee3b5512612fd1fbe2d037fc08ddd
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: tools/install_project.py
-  sha256: e426c40d126b639f857e387878a5a39ef44a97f059ad21494262edde6d06f68c
+  sha256: 5de1277ee28b246afb8ff2ec1db4cd917172d17c916839b44c060002bb8d63aa
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 ```
