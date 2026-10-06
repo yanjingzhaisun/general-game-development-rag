@@ -25,6 +25,8 @@ def main():
 name = "general-game-development-rag"
 version = "0.3.0"
 description = "Project-owned ForAI memory runtime"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = ["pyyaml>=6.0.2,<7"]
 
@@ -41,6 +43,7 @@ build-backend = "hatchling.build"
         encoding="utf-8",
         newline="\n",
     )
+    shutil.copyfile(ROOT / "LICENSE", TARGET / "LICENSE")
     (TARGET / ".python-version").write_text("3.12\n", encoding="utf-8", newline="\n")
     (TARGET / ".gitignore").write_text(RUNTIME_GITIGNORE, encoding="utf-8", newline="\n")
     (TARGET / "embedding.example.toml").write_text(DEFAULT_CONFIG, encoding="utf-8", newline="\n")

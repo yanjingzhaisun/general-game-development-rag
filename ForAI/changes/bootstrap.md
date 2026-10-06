@@ -89,7 +89,7 @@ covers:
   sha256: eea3a0b814f5352b8dd1157d0765211e99c41c0dac92ad03b49ed80a1110090c
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: tools/build_skill_runtime.py
-  sha256: 6d768a407c558198f0bfc6728bdb415cf57f91a6604fa4b573d9c9f36e0ad549
+  sha256: 40adfd95eced54f5810bd77145b5a446c2afac14d0e8342c6789e8d72dfab8c9
   reason: 初始化项目自有图记忆运行器、安装管线、skill 分发和行为验证；见 ForAI/modules/runtime.md。
 - path: tools/install_project.py
   sha256: e426c40d126b639f857e387878a5a39ef44a97f059ad21494262edde6d06f68c

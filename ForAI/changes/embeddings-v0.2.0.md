@@ -79,7 +79,7 @@ covers:
   sha256: 97838b82938d3b0b27acdea1ee377d008795484b51b998e84cd56f8157211ec6
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: tools/build_skill_runtime.py
-  sha256: 6d768a407c558198f0bfc6728bdb415cf57f91a6604fa4b573d9c9f36e0ad549
+  sha256: 40adfd95eced54f5810bd77145b5a446c2afac14d0e8342c6789e8d72dfab8c9
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: tools/install_project.py
   sha256: e426c40d126b639f857e387878a5a39ef44a97f059ad21494262edde6d06f68c

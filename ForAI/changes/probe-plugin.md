@@ -95,7 +95,7 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: ForAI/rag/pyproject.toml
-  sha256: df66471724b89aa511d0377d1a909fe7f1c0a22411f0bf828f97c3721a97b936
+  sha256: e39f08d4df44b6b86add27ae147237b0eda39cd37adfe76305b460f005b5ca5c
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: ForAI/rag/uv.lock
   sha256: 8e4fc73a4986bd763bce722b3b9849e3e4d8327597cb82c05688d61ad956bdc3
@@ -110,7 +110,7 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: skills/project-code-memory/assets/runtime/pyproject.toml
-  sha256: df66471724b89aa511d0377d1a909fe7f1c0a22411f0bf828f97c3721a97b936
+  sha256: e39f08d4df44b6b86add27ae147237b0eda39cd37adfe76305b460f005b5ca5c
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: src/general_game_development_rag/documents.py
   sha256: 082c05a9866284b07a1ce0de0a884b2a4663d9b3fcfcb4fd0b73789ad2f938c2
@@ -122,7 +122,7 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: pyproject.toml
-  sha256: 9b36b0d8cba18fad369e083d8eea1c512a3dcd0da482b0f5f0054b53257f6471
+  sha256: 540dec735486f854f8d6b3cb96fac3af8dfba8d6e13a59290b099778ce5d8f45
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: uv.lock
   sha256: f20fdc282ae2eeab778efb7ff4a52d37d2ed72641429076c6e8d02072982cd3c
@@ -131,6 +131,6 @@ covers:
   sha256: 657f1e79be60cfffbe0e726b58573ec9f226d49902a40d58999e9b79c787a453
   reason: 新增 Kotlin 路由/版本证据、Gradle KTS 字面量和缺失依赖测试；覆盖 XML 属性、命名空间、重复匹配与解析失败，未削弱既有测试。
 - path: tools/build_skill_runtime.py
-  sha256: 6d768a407c558198f0bfc6728bdb415cf57f91a6604fa4b573d9c9f36e0ad549
+  sha256: 40adfd95eced54f5810bd77145b5a446c2afac14d0e8342c6789e8d72dfab8c9
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 ```

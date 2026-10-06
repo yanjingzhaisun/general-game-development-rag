@@ -55,7 +55,7 @@ sources:
 - path: .github/workflows/ci.yml
   sha256: 9bc690b5de8736fff1b9407ad5eb52fb795f56ab517c6a01d9db2cab503662c9
 - path: ForAI/rag/pyproject.toml
-  sha256: df66471724b89aa511d0377d1a909fe7f1c0a22411f0bf828f97c3721a97b936
+  sha256: e39f08d4df44b6b86add27ae147237b0eda39cd37adfe76305b460f005b5ca5c
 - path: ForAI/rag/uv.lock
   sha256: 8e4fc73a4986bd763bce722b3b9849e3e4d8327597cb82c05688d61ad956bdc3
 - path: ForAI/rag/manage.py
@@ -113,13 +113,13 @@ sources:
 - path: tests/test_memory.py
   sha256: 657f1e79be60cfffbe0e726b58573ec9f226d49902a40d58999e9b79c787a453
 - path: tools/build_skill_runtime.py
-  sha256: 6d768a407c558198f0bfc6728bdb415cf57f91a6604fa4b573d9c9f36e0ad549
+  sha256: 40adfd95eced54f5810bd77145b5a446c2afac14d0e8342c6789e8d72dfab8c9
 - path: pyproject.toml
-  sha256: 9b36b0d8cba18fad369e083d8eea1c512a3dcd0da482b0f5f0054b53257f6471
+  sha256: 540dec735486f854f8d6b3cb96fac3af8dfba8d6e13a59290b099778ce5d8f45
 - path: uv.lock
   sha256: f20fdc282ae2eeab778efb7ff4a52d37d2ed72641429076c6e8d02072982cd3c
 - path: skills/project-code-memory/assets/runtime/pyproject.toml
-  sha256: df66471724b89aa511d0377d1a909fe7f1c0a22411f0bf828f97c3721a97b936
+  sha256: e39f08d4df44b6b86add27ae147237b0eda39cd37adfe76305b460f005b5ca5c
 - path: tools/install_project.py
   sha256: e426c40d126b639f857e387878a5a39ef44a97f059ad21494262edde6d06f68c
 ```

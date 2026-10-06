@@ -106,3 +106,7 @@ uv build
 `main` 是稳定线，`dev` 是长期开发分支：`dev` 上 CI 全绿后，`promote` job 自动把
 `main` 快进到 `dev`（仅快进——若 `main` 存在 `dev` 没有的提交，则报错停下而不覆盖）。
 目标项目按自身工作流接入。
+
+## 许可
+
+MIT，见 [LICENSE](LICENSE)。
