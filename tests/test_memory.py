@@ -12,7 +12,9 @@ from general_game_development_rag.documents import MemoryError, digest, parse_do
 from general_game_development_rag.graph import build, query
 
 
-def document(root, name, kind="functional", value=60, scope="production", fingerprint=None):
+def document(
+    root, name, kind="functional", value=60, scope="production", fingerprint=None, probe=None
+):
     import yaml
 
     path = root / f"ForAI/{name}.md"
@@ -26,7 +28,13 @@ def document(root, name, kind="functional", value=60, scope="production", finger
                 "predicate": "ttl_minutes",
                 "scope": scope,
                 "value": value,
-                "probe": {"type": "python_literal", "path": "session.py", "name": "TTL"},
+                "probe": probe
+                or {
+                    "capability": "literal",
+                    "language": "python",
+                    "path": "session.py",
+                    "name": "TTL",
+                },
             }
         ],
     }
@@ -221,6 +229,385 @@ def test_probe_never_executes_project_code(project):
         "raise RuntimeError('must not run')\nTTL = 30\n", encoding="utf-8"
     )
     assert not any(item["kind"] == "probe_unresolved" for item in build(project)["issues"])
+
+
+@pytest.mark.parametrize(
+    "probe",
+    [
+        {
+            "capability": "literal",
+            "language": "typescript",
+            "reader": "ts-tree-sitter",
+            "path": "session.ts",
+            "name": "TTL",
+        },
+        {"capability": "literal", "language": "typescript", "path": "session.ts", "name": "TTL"},
+        {"capability": "literal", "path": "session.ts", "name": "TTL"},
+    ],
+)
+def test_typescript_probe_routes_and_records_provenance(project, probe):
+    from importlib.metadata import version
+
+    document(project, "function", value=30, probe=probe)
+    (project / "session.ts").write_text("export const TTL = 30 as const;\n", encoding="utf-8")
+    result = build(project)
+    assert not any(node["kind"] == "probe_unresolved" for node in result["issues"])
+    import sqlite3
+
+    with sqlite3.connect(project / "ForAI/rag/.cache/graph.sqlite3") as db:
+        nodes = dict(db.execute("SELECT id, data FROM nodes"))
+    item = json.loads(nodes["claim:function:ttl"])
+    assert item["observed"] == 30
+    assert item["probe_evidence"] == {
+        "reader": "ts-tree-sitter",
+        "version": "1",
+        "precision": "syntactic",
+        "language": "typescript",
+        "capability": "literal",
+        "dependencies": {
+            "tree-sitter": version("tree-sitter"),
+            "tree-sitter-typescript": version("tree-sitter-typescript"),
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("export const TTL: number = 30;", 30),
+        ("const TTL = 30 satisfies number;", 30),
+        ('let TTL = "30" as const;', "30"),
+    ],
+)
+def test_typescript_literal_forms(project, source, expected):
+    from general_game_development_rag.readers import _ts_literal
+
+    path = project / "session.ts"
+    path.write_text(source, encoding="utf-8")
+    assert _ts_literal(path, "TTL") == expected
+
+
+def test_javascript_literal_reader(project):
+    from general_game_development_rag.readers import _ts_literal
+
+    path = project / "session.js"
+    path.write_text("export const TTL = 30;", encoding="utf-8")
+    assert _ts_literal(path, "TTL") == 30
+
+
+def test_typescript_missing_name_is_unresolved(project):
+    from general_game_development_rag.readers import ts_literal_hits
+
+    document(
+        project,
+        "function",
+        value=30,
+        probe={
+            "capability": "literal",
+            "language": "typescript",
+            "path": "session.ts",
+            "name": "TTL",
+        },
+    )
+    (project / "session.ts").write_text("export const OTHER = 30;", encoding="utf-8")
+    assert ts_literal_hits(project / "session.ts", "TTL") == []
+    issue = next(item for item in build(project)["issues"] if item["kind"] == "probe_unresolved")
+    assert issue["action"] == "inspect_code"
+
+
+@pytest.mark.parametrize("explicit_reader", [False, True])
+def test_missing_tree_sitter_dependency_is_explicitly_unresolved(
+    project, monkeypatch, explicit_reader
+):
+    import builtins
+
+    original_import = builtins.__import__
+
+    def missing_tree_sitter(name, *args, **kwargs):
+        if name == "tree_sitter":
+            raise ModuleNotFoundError("Simulated missing tree_sitter dependency", name=name)
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", missing_tree_sitter)
+    probe = {"capability": "literal", "path": "session.ts", "name": "TTL"}
+    if explicit_reader:
+        probe["reader"] = "ts-tree-sitter"
+    document(project, "function", value=30, probe=probe)
+    (project / "session.ts").write_text("export const TTL = 30;", encoding="utf-8")
+    result = build(project)
+    issues = [item for item in result["issues"] if item["kind"] == "probe_unresolved"]
+    assert len(issues) == 1
+    assert issues[0]["objects"] == ["claim:function:ttl", "code:session.ts"]
+    assert issues[0]["action"] == "install_reader"
+    assert not any(item["kind"] == "description_drift" for item in result["issues"])
+    with sqlite3.connect(project / "ForAI/rag/.cache/graph.sqlite3") as db:
+        claim = json.loads(
+            db.execute("SELECT data FROM nodes WHERE id = 'claim:function:ttl'").fetchone()[0]
+        )
+    assert "observed" not in claim
+    assert "probe_evidence" not in claim
+
+
+def test_probe_router_failure_actions(project, monkeypatch):
+    from general_game_development_rag import readers
+
+    probe = {"capability": "literal", "language": "typescript", "path": "x.ts", "name": "X"}
+    monkeypatch.setattr(readers, "available", lambda reader: reader.name == "builtin-python")
+    with pytest.raises(readers.ProbeError) as missing:
+        readers.resolve(probe)
+    assert missing.value.action == "install_reader"
+    with pytest.raises(readers.ProbeError) as explicit:
+        readers.resolve({**probe, "reader": "unknown"})
+    assert explicit.value.action == "inspect_reader"
+    with pytest.raises(readers.ProbeError) as unsupported:
+        readers.resolve({**probe, "reader": "builtin-python"})
+    assert unsupported.value.action == "inspect_reader"
+
+
+def test_probe_router_disambiguates_competing_readers(monkeypatch):
+    from general_game_development_rag import readers
+
+    extra = readers.Reader(
+        "other-ts",
+        "python",
+        "tree_sitter_typescript",
+        "syntactic",
+        ("literal",),
+        ("typescript",),
+        "9",
+        "_ts_literal",
+    )
+    monkeypatch.setattr(readers, "REGISTRY", (*readers.REGISTRY, extra))
+    with pytest.raises(readers.ProbeError) as error:
+        readers.resolve(
+            {"capability": "literal", "language": "typescript", "path": "x.ts", "name": "X"}
+        )
+    assert error.value.action == "disambiguate_reader"
+
+
+@pytest.mark.parametrize(
+    "routing", [{}, {"language": "python"}, {"language": "python", "reader": "builtin-python"}]
+)
+def test_python_probe_records_complete_evidence(project, routing):
+    from general_game_development_rag.graph import canonical
+
+    probe = {"capability": "literal", "path": "session.py", "name": "TTL", **routing}
+    path = document(project, "function", value=30, probe=probe)
+    assert not any(item["kind"] == "probe_unresolved" for item in build(project)["issues"])
+    claim = parse_document("ForAI/function.md", path.read_text(encoding="utf-8")).memory["claims"][
+        0
+    ]
+    expected = {
+        **claim,
+        "id": "claim:function:ttl",
+        "kind": "claim",
+        "memory_kind": "functional",
+        "path": "ForAI/function.md",
+        "text": canonical(claim),
+        "observed": 30,
+        "probe_evidence": {
+            "reader": "builtin-python",
+            "version": "1",
+            "precision": "syntactic",
+            "language": "python",
+            "capability": "literal",
+            "dependencies": {},
+        },
+    }
+    with sqlite3.connect(project / "ForAI/rag/.cache/graph.sqlite3") as db:
+        actual = db.execute("SELECT data FROM nodes WHERE id = ?", (expected["id"],)).fetchone()[0]
+    assert actual.encode("utf-8") == canonical(expected).encode("utf-8")
+
+
+@pytest.mark.parametrize("probe_type", ["python_literal", "unknown", None])
+@pytest.mark.parametrize("include_capability", [False, True])
+def test_probe_type_is_rejected_with_migration_guidance(project, probe_type, include_capability):
+    probe = {"type": probe_type, "path": "session.py", "name": "TTL"}
+    if include_capability:
+        probe.update(capability="literal", language="python")
+    document(project, "function", value=30, probe=probe)
+    with pytest.raises(
+        MemoryError,
+        match=r"probe\.type is no longer supported; use capability: literal with language: python",
+    ):
+        build(project)
+
+
+def test_every_successful_probe_claim_has_evidence(project):
+    from importlib.metadata import version
+
+    for language, suffix in [("python", "py"), ("typescript", "ts"), ("javascript", "js")]:
+        if suffix != "py":
+            (project / f"session.{suffix}").write_text("export const TTL = 30;", encoding="utf-8")
+        document(
+            project,
+            language,
+            value=30,
+            probe={
+                "capability": "literal",
+                "language": language,
+                "path": f"session.{suffix}",
+                "name": "TTL",
+            },
+        )
+    assert not any(item["kind"] == "probe_unresolved" for item in build(project)["issues"])
+    with sqlite3.connect(project / "ForAI/rag/.cache/graph.sqlite3") as db:
+        claims = [
+            json.loads(row[0])
+            for row in db.execute("SELECT data FROM nodes WHERE id LIKE 'claim:%'")
+        ]
+    assert len(claims) == 3
+    for claim in claims:
+        evidence = claim["probe_evidence"]
+        assert claim["observed"] == 30
+        assert evidence["capability"] == "literal"
+        assert evidence["version"] == "1"
+        assert evidence["precision"] == "syntactic"
+        assert evidence["language"] == claim["probe"]["language"]
+        if evidence["language"] == "python":
+            assert evidence["reader"] == "builtin-python"
+            assert evidence["dependencies"] == {}
+        else:
+            assert evidence["reader"] == "ts-tree-sitter"
+            assert evidence["dependencies"] == {
+                "tree-sitter": version("tree-sitter"),
+                "tree-sitter-typescript": version("tree-sitter-typescript"),
+            }
+
+
+def test_unexpected_reader_failure_uses_inspect_reader(project, monkeypatch):
+    from general_game_development_rag import graph
+
+    def failed_reader(*args, **kwargs):
+        raise RuntimeError("Unexpected reader failure")
+
+    monkeypatch.setattr(graph, "read", failed_reader)
+    document(project, "function", value=30)
+    issues = [item for item in build(project)["issues"] if item["kind"] == "probe_unresolved"]
+    assert len(issues) == 1
+    assert issues[0]["action"] == "inspect_reader"
+
+
+@pytest.mark.parametrize(
+    "registered, expected_action", [(False, "inspect_reader"), (True, "enable_reader")]
+)
+def test_unregistered_and_disabled_readers_are_distinct_graph_issues(
+    project, monkeypatch, registered, expected_action
+):
+    from dataclasses import replace
+
+    from general_game_development_rag import readers
+
+    reader_name = "no-such-reader"
+    if registered:
+        reader = replace(readers.REGISTRY[0], enabled=False)
+        monkeypatch.setattr(readers, "REGISTRY", (reader,))
+        reader_name = reader.name
+    document(
+        project,
+        "function",
+        probe={
+            "capability": "literal",
+            "language": "python",
+            "reader": reader_name,
+            "path": "session.py",
+            "name": "TTL",
+        },
+    )
+    issues = [item for item in build(project)["issues"] if item["kind"] == "probe_unresolved"]
+    assert len(issues) == 1
+    assert issues[0]["action"] == expected_action
+
+
+@pytest.mark.parametrize("available_package", [None, "tree-sitter"])
+def test_reader_dependency_versions_do_not_invent_missing_metadata(monkeypatch, available_package):
+    from general_game_development_rag import readers
+
+    def metadata_version(package):
+        if package == available_package:
+            return "0.26.0"
+        raise readers.importlib.metadata.PackageNotFoundError(package)
+
+    monkeypatch.setattr(readers.importlib.metadata, "version", metadata_version)
+    reader = next(item for item in readers.REGISTRY if item.name == "ts-tree-sitter")
+    expected = {available_package: "0.26.0"} if available_package else {}
+    assert reader.dependency_versions() == expected
+
+
+def test_disabled_reader_has_enable_action(monkeypatch):
+    from general_game_development_rag import readers
+
+    item = readers.Reader(
+        "disabled-ts",
+        "python",
+        "tree_sitter_typescript",
+        "syntactic",
+        ("literal",),
+        ("typescript",),
+        "1",
+        "_ts_literal",
+        False,
+    )
+    monkeypatch.setattr(readers, "REGISTRY", (item,))
+    with pytest.raises(readers.ProbeError) as error:
+        readers.resolve(
+            {"capability": "literal", "language": "typescript", "path": "x.ts", "name": "X"}
+        )
+    assert error.value.action == "enable_reader"
+
+
+def test_command_reader_contract_failure_is_inspect_reader(tmp_path, monkeypatch):
+    from general_game_development_rag import readers
+
+    reader = readers.Reader(
+        "external",
+        "command",
+        None,
+        "syntactic",
+        ("literal",),
+        ("typescript",),
+        "2",
+        "",
+        command="reader",
+    )
+
+    def invalid_contract(*args, **kwargs):
+        return subprocess.CompletedProcess(args[0], 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(readers.subprocess, "run", invalid_contract)
+    path = tmp_path / "x.ts"
+    path.write_text("const X = 1;", encoding="utf-8")
+    with pytest.raises(readers.ProbeError) as error:
+        readers.read(reader, path, "X")
+    assert error.value.action == "inspect_reader"
+
+
+def test_missing_command_reader_has_inspect_action(monkeypatch):
+    from general_game_development_rag import readers
+
+    reader = readers.Reader(
+        "missing-command",
+        "command",
+        None,
+        "syntactic",
+        ("literal",),
+        ("typescript",),
+        "2",
+        "",
+        command="definitely-not-installed",
+    )
+    monkeypatch.setattr(readers, "REGISTRY", (reader,))
+    with pytest.raises(readers.ProbeError) as error:
+        readers.resolve(
+            {
+                "capability": "literal",
+                "language": "typescript",
+                "reader": reader.name,
+                "path": "x.ts",
+                "name": "X",
+            }
+        )
+    assert error.value.action == "inspect_reader"
 
 
 def test_malformed_record_is_not_silently_ignored(project):

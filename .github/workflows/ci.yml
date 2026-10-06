@@ -2,7 +2,7 @@ name: Validate project memory
 
 on:
   push:
-    branches: [main]
+    branches: ['**'] # run on any branch: own repo, want CI feedback on every push
   pull_request:
   workflow_dispatch:
   schedule:
@@ -23,16 +23,16 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
-          version: '0.11.6'
-      - run: uv sync --locked
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run pytest -q
-      - run: uv run --directory ForAI/rag python manage.py scan --fail-on-issues
+          version: '0.12.23'
+      - run: uv sync --locked --extra readers
+      - run: uv run --locked --extra readers ruff check .
+      - run: uv run --locked --extra readers ruff format --check .
+      - run: uv run --locked --extra readers pytest -q
+      - run: uv run --locked --extra readers --directory ForAI/rag python manage.py scan --fail-on-issues
       - name: Check pull request code coverage records
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         shell: bash
-        run: uv run ggrag coverage --base "$BASE_SHA"
+        run: uv run --locked --extra readers ggrag coverage --base "$BASE_SHA"
       - run: uv build

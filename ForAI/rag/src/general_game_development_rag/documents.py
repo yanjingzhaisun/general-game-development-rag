@@ -99,10 +99,20 @@ def parse_document(path: str, text: str) -> Document:
             raise MemoryError(f"{path}: invalid claim status")
         if "probe" in claim:
             probe = claim["probe"]
-            if not isinstance(probe, dict) or probe.get("type") != "python_literal":
-                raise MemoryError(f"{path}: supported probe type is python_literal")
+            if not isinstance(probe, dict):
+                raise MemoryError(f"{path}: probe must be a mapping")
+            if "type" in probe:
+                raise MemoryError(
+                    f"{path}: probe.type is no longer supported; "
+                    "use capability: literal with language: python"
+                )
             if not all(isinstance(probe.get(k), str) and probe[k] for k in ("path", "name")):
                 raise MemoryError(f"{path}: probe needs path and name")
+            if probe.get("capability") != "literal":
+                raise MemoryError(f"{path}: probe capability must be literal")
+            for key in ("language", "reader"):
+                if key in probe and (not isinstance(probe[key], str) or not probe[key]):
+                    raise MemoryError(f"{path}: probe {key} must be a nonempty string")
     for cover in memory.get("covers", []):
         if not isinstance(cover, dict) or not all(
             isinstance(cover.get(key), str) and cover[key].strip()

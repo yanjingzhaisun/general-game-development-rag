@@ -28,8 +28,10 @@ claims:
     value: 30
     status: active
     probe:
-      type: python_literal
-      path: src/session.py
+      capability: literal
+      language: typescript
+      reader: ts-tree-sitter
+      path: src/session.ts
       name: TTL_MINUTES
 ```
 ````
@@ -42,9 +44,35 @@ reviewed SHA-256 hashes produce `needs_review`. Design sources do not require ha
 Paths are project-relative with `/`; absolute paths, parent traversal and escaping
 symlinks are rejected. `sources` binds whole files in v0.2 (symbols are not resolved).
 Probe paths also create code relationships. Code text is read from disk, not stored
-in the graph. `python_literal` reads exactly one top-level assignment using AST and
-literal evaluation, never imports or executes the file. It is a syntactic observation,
-not evidence that the value is the final runtime value.
+in the graph. New probes name a language-independent `capability` (currently `literal`),
+an optional `language` (otherwise inferred from the path extension), and an optional
+`reader`. Without an explicit reader, exactly one enabled reader must support the
+capability and language. An explicit reader that is missing, disabled, or incompatible
+produces `probe_unresolved`; ambiguity requires `disambiguate_reader`. Every unresolved
+probe carries an action (`inspect_code`, `install_reader`, `enable_reader`,
+`inspect_reader`, or `disambiguate_reader`), and must never be treated as a pass.
+An unregistered reader name requires `inspect_reader`; `enable_reader` applies only
+when a matching reader is registered but disabled.
+Successful evidence includes reader name, version, language, capability, precision
+(`syntactic` or `semantic`),
+and a `dependencies` mapping of reader-declared package names to installed versions.
+Unavailable dependency version metadata is omitted; no known versions produces `{}`.
+Syntactic evidence is not semantic proof.
+Readers are registered in `general_game_development_rag.readers.REGISTRY` with a unique
+name, `kind` (`python` or `command`), module/entrypoint or executable, declared version,
+precision, capabilities, languages, and enabled state. Python entrypoints accept `(path,
+name)` and return a JSON-compatible value. A command receives one JSON object on stdin
+with `source` and `name`, then returns `{"value": ...}` on stdout. Command readers have a
+10-second timeout; missing commands, timeouts, nonzero exits, or malformed output require
+`inspect_reader`. The reader process receives source text, never an instruction to execute it.
+
+The `type` field is deprecated; including it raises an error.
+`builtin-python` supports `capability: literal` with `language: python` and uses AST
+literal evaluation. Optional
+`ts-tree-sitter` reads top-level JavaScript/TypeScript `const`, `let`, and `var` literal
+declarations, including exports, type annotations, `as const`, and `satisfies`. Readers
+must inspect source text only; they never import or execute target-project code. These
+are syntactic observations, not evidence that a value wins at runtime.
 
 Each claim requires stable local `id`, `subject`, `predicate`, `scope`, and `value`.
 Use exact normalized units in the predicate, such as `ttl_minutes`; automatic unit

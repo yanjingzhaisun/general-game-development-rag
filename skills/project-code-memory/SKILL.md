@@ -63,9 +63,10 @@ YAML block in the body. Use separate functional and design documents.
 1. Read `ForAI/index.md`, then query using feature names, bilingual keywords or symbols.
 2. Inspect returned document paths and code sources, including configurations and
    relevant tests. Query refreshes the graph and reuses unchanged document vectors.
-3. Bring unresolved issues into the task context. A probe observes a static Python
-   literal, not production runtime behavior. Avoid treating a missing result as absence
-   of functionality or a clean scan as proof of semantic consistency.
+3. Bring unresolved issues into the task context. Probes use registered static readers
+   and carry precision evidence; they do not establish production runtime behavior.
+   Avoid treating a missing result as absence of functionality or a clean scan as proof
+   of semantic consistency.
 
 ## Synchronize after development
 

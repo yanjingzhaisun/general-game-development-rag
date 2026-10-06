@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .documents import MemoryError, digest, load_documents, project_path
 from .embeddings import load_config, semantic_search, status
+from .readers import ProbeError, read, resolve
 
 
 def canonical(value) -> str:
@@ -143,11 +144,27 @@ def build(root: Path) -> dict:
             try:
                 if current is None:
                     raise MemoryError("Source file does not exist")
-                observed = python_literal(project_path(root, probe["path"]), probe["name"])
+                reader, language = resolve(probe)
+                observed = read(reader, project_path(root, probe["path"]), probe["name"])
+            except ProbeError as exc:
+                issue("probe_unresolved", [claim_id, code_id], str(exc), exc.action)
+                continue
             except (MemoryError, OSError, SyntaxError, ValueError, TypeError) as exc:
                 issue("probe_unresolved", [claim_id, code_id], str(exc), "inspect_code")
                 continue
+            except Exception as exc:  # noqa: BLE001 - plugin failures must become unresolved issues.
+                issue("probe_unresolved", [claim_id, code_id], str(exc), "inspect_reader")
+                continue
             nodes[claim_id]["observed"] = observed
+            evidence = {
+                "reader": reader.name,
+                "version": reader.version,
+                "precision": reader.precision,
+                "language": language,
+                "capability": probe["capability"],
+                "dependencies": reader.dependency_versions(),
+            }
+            nodes[claim_id]["probe_evidence"] = evidence
             if canonical(observed) != canonical(claim["value"]):
                 issue(
                     "description_drift" if kind == "functional" else "design_deviation",
@@ -157,6 +174,9 @@ def build(root: Path) -> dict:
                     expected=claim["value"],
                     observed=observed,
                     scope=claim["scope"],
+                    reader=reader.name,
+                    reader_version=reader.version,
+                    precision=reader.precision,
                 )
 
     for key, claims in groups.items():

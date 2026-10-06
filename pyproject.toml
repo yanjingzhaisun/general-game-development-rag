@@ -9,11 +9,17 @@ dependencies = ["pyyaml>=6.0.2,<7"]
 [project.scripts]
 ggrag = "general_game_development_rag.cli:main"
 
+[project.optional-dependencies]
+readers = ["tree-sitter>=0.25,<0.27", "tree-sitter-typescript>=0.23,<0.24"]
+
 [dependency-groups]
 dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+ignore = ["EXE002"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
