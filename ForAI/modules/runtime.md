@@ -49,7 +49,7 @@ v0.2 适用于本地单写入者；并行扫描和原子多文件快照尚未协
 kind: functional
 sources:
 - path: .github/workflows/ci.yml
-  sha256: 2aaa56e829fe73faf0b96285a8070dc4693d96224ead6079ee5a6b2fd42413c9
+  sha256: f341b7149e4297ec9017d5b1ae15920f86b9f835aab0837c114a5a871e2acc93
 - path: ForAI/rag/pyproject.toml
   sha256: a78f5a6a016bdb86d8f692426967ffc477bf23d3be7976f1c646f07fccd38d6d
 - path: ForAI/rag/uv.lock
