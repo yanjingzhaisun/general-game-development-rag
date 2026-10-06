@@ -10,7 +10,7 @@ from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1]
 UPSTREAM = "https://github.com/yanjingzhaisun/general-game-development-rag"
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 MARKER = "<!-- project-code-memory:start -->"
 ROUTE = """<!-- project-code-memory:start -->
 ## Project-owned AI memory

@@ -69,5 +69,5 @@ sources:
 - path: tests/test_embeddings.py
   sha256: 97838b82938d3b0b27acdea1ee377d008795484b51b998e84cd56f8157211ec6
 - path: tools/install_project.py
-  sha256: 36d074c33539aa96ff6b3d7ce3805514470c3aecbb105d24d5324312e616daa3
+  sha256: e426c40d126b639f857e387878a5a39ef44a97f059ad21494262edde6d06f68c
 ```

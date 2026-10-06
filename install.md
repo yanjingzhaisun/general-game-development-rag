@@ -45,11 +45,11 @@ PyYAML；目标项目自己的应用无需使用 Python。缺少 uv 时按其
 
 ## 2. 获取固定版本并安装
 
-默认使用发行标签 `v0.2.0`；不要默默跟随 main。需要其他版本时使用用户指定的
+默认使用发行标签 `v0.3.0`；不要默默跟随 main。需要其他版本时使用用户指定的
 标签或完整提交，并记录实际解析出的提交 ID。
 
 ```text
-git clone --depth 1 --branch v0.2.0 https://github.com/yanjingzhaisun/general-game-development-rag.git <临时目录>
+git clone --depth 1 --branch v0.3.0 https://github.com/yanjingzhaisun/general-game-development-rag.git <临时目录>
 git -C <临时目录> rev-parse HEAD
 uv run --python 3.12 --no-project <临时目录>/tools/install_project.py --project <项目绝对路径>
 ```

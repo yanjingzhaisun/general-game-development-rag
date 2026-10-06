@@ -25,7 +25,7 @@ summary: 记录 v0.2.0 的 embedding 管线、安装配置提示和本地文件�
 kind: change
 covers:
 - path: ForAI/rag/src/general_game_development_rag/__init__.py
-  sha256: 58413eee118b3f4f7ee44f841163cc8f0a4d49c0f47916ee6a611daee973b10e
+  sha256: 85e85624e6fc79febcaf2dfda1b289cd223434f2c81562b6c81a330b78ed3195
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: ForAI/rag/src/general_game_development_rag/cli.py
   sha256: 9903401e0801aa764734ca7fbdc73396661d86b1bcc9776d6eb28bebb3bad3d5
@@ -40,7 +40,7 @@ covers:
   sha256: 102b7dbcd139e657cc4e1f05f8b7c18194b2625733fde6883d044d2fe47898f3
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/__init__.py
-  sha256: 58413eee118b3f4f7ee44f841163cc8f0a4d49c0f47916ee6a611daee973b10e
+  sha256: 85e85624e6fc79febcaf2dfda1b289cd223434f2c81562b6c81a330b78ed3195
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/cli.py
   sha256: 9903401e0801aa764734ca7fbdc73396661d86b1bcc9776d6eb28bebb3bad3d5
@@ -58,7 +58,7 @@ covers:
   sha256: 4fd49e5ff0a052e6bec0fc742794f89e35797e311c37f657e9c5dda3873d3c6a
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: src/general_game_development_rag/__init__.py
-  sha256: 58413eee118b3f4f7ee44f841163cc8f0a4d49c0f47916ee6a611daee973b10e
+  sha256: 85e85624e6fc79febcaf2dfda1b289cd223434f2c81562b6c81a330b78ed3195
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: src/general_game_development_rag/cli.py
   sha256: 9903401e0801aa764734ca7fbdc73396661d86b1bcc9776d6eb28bebb3bad3d5
@@ -79,9 +79,9 @@ covers:
   sha256: 97838b82938d3b0b27acdea1ee377d008795484b51b998e84cd56f8157211ec6
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: tools/build_skill_runtime.py
-  sha256: 8a96f4a70187ac220710d0e7170c2440d0f5dfce0ad441017ceeb7dff36f9fe8
+  sha256: 6d768a407c558198f0bfc6728bdb415cf57f91a6604fa4b573d9c9f36e0ad549
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 - path: tools/install_project.py
-  sha256: 36d074c33539aa96ff6b3d7ce3805514470c3aecbb105d24d5324312e616daa3
+  sha256: e426c40d126b639f857e387878a5a39ef44a97f059ad21494262edde6d06f68c
   reason: 增加或同步 embedding 配置、语义检索、安装提示与相应验证；详见 ForAI/modules/embeddings.md。
 ```

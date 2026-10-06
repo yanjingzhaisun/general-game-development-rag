@@ -23,7 +23,7 @@ def main():
     (TARGET / "pyproject.toml").write_text(
         """[project]
 name = "general-game-development-rag"
-version = "0.2.0"
+version = "0.3.0"
 description = "Project-owned ForAI memory runtime"
 requires-python = ">=3.12"
 dependencies = ["pyyaml>=6.0.2,<7"]

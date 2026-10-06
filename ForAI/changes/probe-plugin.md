@@ -95,10 +95,10 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: ForAI/rag/pyproject.toml
-  sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
+  sha256: df66471724b89aa511d0377d1a909fe7f1c0a22411f0bf828f97c3721a97b936
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: ForAI/rag/uv.lock
-  sha256: d5ccae75b99494b891038eef528027e9b6681ca612d37c457d2bd570bd8d67be
+  sha256: 8e4fc73a4986bd763bce722b3b9849e3e4d8327597cb82c05688d61ad956bdc3
   reason: 用官方 PyPI 增量锁定 tree-sitter-kotlin 1.1.0；未使用 --upgrade，其它依赖版本保持原样。
 - path: skills/project-code-memory/assets/runtime/src/general_game_development_rag/documents.py
   sha256: 082c05a9866284b07a1ce0de0a884b2a4663d9b3fcfcb4fd0b73789ad2f938c2
@@ -110,7 +110,7 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: skills/project-code-memory/assets/runtime/pyproject.toml
-  sha256: f72dc5cc0fcb098417657329cba7c40267fdbd5affc609467cce7a54f42d78cc
+  sha256: df66471724b89aa511d0377d1a909fe7f1c0a22411f0bf828f97c3721a97b936
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: src/general_game_development_rag/documents.py
   sha256: 082c05a9866284b07a1ce0de0a884b2a4663d9b3fcfcb4fd0b73789ad2f938c2
@@ -122,15 +122,15 @@ covers:
   sha256: 3837ecb01aaf766ee9e008c7a824fe26637f5d75127487fb1b5868b0bf768ae3
   reason: 新增 Kotlin 与标准库 XML reader，共享 tree-sitter 遍历，记录 XML 匹配数与歧义；保留原有 reader 契约和失败动作。
 - path: pyproject.toml
-  sha256: e6e516d45b3fdcfd402d2f0659c1dfb1b30777191aedfc4e501d88b9c7264846
+  sha256: 9b36b0d8cba18fad369e083d8eea1c512a3dcd0da482b0f5f0054b53257f6471
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 - path: uv.lock
-  sha256: 3b365217c97c38797b1376c223b7f3f7c60f879b12a26dabc16118e78e7dbd4d
+  sha256: f20fdc282ae2eeab778efb7ff4a52d37d2ed72641429076c6e8d02072982cd3c
   reason: 用官方 PyPI 增量锁定 tree-sitter-kotlin 1.1.0；未使用 --upgrade，其它依赖版本保持原样。
 - path: tests/test_memory.py
   sha256: 657f1e79be60cfffbe0e726b58573ec9f226d49902a40d58999e9b79c787a453
   reason: 新增 Kotlin 路由/版本证据、Gradle KTS 字面量和缺失依赖测试；覆盖 XML 属性、命名空间、重复匹配与解析失败，未削弱既有测试。
 - path: tools/build_skill_runtime.py
-  sha256: c790db522c769b7f2d6f2b538ffd894b051432b20ff4d5e770c7571c84be2f13
+  sha256: 6d768a407c558198f0bfc6728bdb415cf57f91a6604fa4b573d9c9f36e0ad549
   reason: 可选 readers extra 新增 tree-sitter-kotlin；同步根配置、生成器和两份 runtime 配置，不新增主依赖。
 ```
